@@ -13,8 +13,6 @@ int main()
 	float deltatime = 0;
 
 
-	bool canShoot = true;
-
 	while (window.isOpen())
 	{
 		sf::Event event;
@@ -35,7 +33,6 @@ int main()
 
 		window.display();
 
-		
 	}
 
 	return 0;
