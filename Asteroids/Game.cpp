@@ -3,16 +3,22 @@
 
 Game::Game()
 {
-	asteroidTexture.loadFromFile("asteroid.png");
-	asteroids.push_back(sf::Sprite(asteroidTexture));
-	asteroids.push_back(sf::Sprite(asteroidTexture));
+	bullets.reserve(100);
+	// Fill bullets pool
+	for (int i = 0; i < 100; ++i)
+	{
+		bullets.push_back(Bullet());
+	}
 
-	asteroids[0].setPosition(640, 320);
-	asteroids[0].setOrigin(32, 32);
-	asteroids[1].setPosition(640, 560);
-	asteroids[1].setOrigin(32, 32);
 
-	
+
+	asteroids.push_back(a1);
+	asteroids.push_back(a2);
+	a1.velocity = { -0.15, -0.1 };
+	asteroids[0].spr.setPosition(640, 320);
+	asteroids[0].spr.setOrigin(32, 32);
+	asteroids[1].spr.setPosition(640, 560);
+	asteroids[1].spr.setOrigin(32, 32);
 
 }
 
@@ -30,10 +36,20 @@ void Game::Update(const float& deltaTime)
 	for (auto& b : bullets)
 	{
 		b.spr.move(b.velocity);
+		
+		DisableBullet(b); // Checks if bullets are out of range and put
+	}
+
+	for (auto& a : asteroids)
+	{
+		a.spr.rotate(50 * deltaTime);
+		a.spr.move(a.velocity);
+		WrapObject(a.spr);
 	}
 
 	UpdateCollisions(deltaTime);
-	WrapPlayer();
+	WrapObject(mPlayer.GetSprite());
+	
 
 }
 
@@ -48,7 +64,7 @@ void Game::Draw(sf::RenderWindow& wnd)
 
 	for (auto& a : asteroids)
 	{
-		wnd.draw(a);
+		wnd.draw(a.spr);
 	}
 
 }
@@ -59,35 +75,51 @@ void Game::Shoot(const float& dt)
 	if ((now - lastFired) >= mPlayer.GetShootDelay())
 	{
 		lastFired = now;
-		bullets.push_back(CreateBullet(mPlayer.GetSprite(), dt));
+		auto bullet = std::find_if(bullets.begin(), bullets.end(), [](Bullet& b) {return b.bInPool; });
+		FireBullet(*bullet, dt);
 
 	}
 
 }
 
-void Game::WrapPlayer()
+void Game::WrapObject(sf::Sprite& sprite)
 {
 	// Wrap player to opposite side of screen
 	// TODO: Remove magic numbers for the screen width and height
-	if (mPlayer.GetSprite().getPosition().x > 1280) mPlayer.GetSprite().setPosition(0, mPlayer.GetSprite().getPosition().y);
-	if (mPlayer.GetSprite().getPosition().x < 0) mPlayer.GetSprite().setPosition(1280, mPlayer.GetSprite().getPosition().y);
-	if (mPlayer.GetSprite().getPosition().y > 720) mPlayer.GetSprite().setPosition(mPlayer.GetSprite().getPosition().x, 0);
-	if (mPlayer.GetSprite().getPosition().y < 0) mPlayer.GetSprite().setPosition(mPlayer.GetSprite().getPosition().x, 720);
+	if (sprite.getPosition().x > 1280) sprite.setPosition(0, sprite.getPosition().y);
+	if (sprite.getPosition().x < 0) sprite.setPosition(1280, sprite.getPosition().y);
+	if (sprite.getPosition().y > 720) sprite.setPosition(sprite.getPosition().x, 0);
+	if (sprite.getPosition().y < 0) sprite.setPosition(sprite.getPosition().x, 720);
 
 }
 
-Bullet Game::CreateBullet(const sf::Sprite& player, const float& deltatime)
+void Game::DisableBullet(Bullet& bullet)
 {
-	Bullet bullet;
+	if ((bullet.spr.getPosition().x > 1280) ||
+		(bullet.spr.getPosition().x < 0) ||
+		(bullet.spr.getPosition().y > 720) ||
+		(bullet.spr.getPosition().y < 0))
+	{
+		bullet.bInPool = true;
+		bullet.velocity = { 0, 0 };
+		bullet.spr.setPosition(1380, 800); // Object pool position
+	}
+
+}
+
+void Game::FireBullet(Bullet& bullet, const float& deltatime)
+{
+
 	bullet.spr.setOrigin(4, 4);
-	bullet.spr.setPosition(player.getPosition().x, player.getPosition().y);
-	bullet.spr.setRotation(player.getRotation());
+	bullet.spr.setPosition(mPlayer.GetSprite().getPosition().x, mPlayer.GetSprite().getPosition().y);
+	bullet.spr.setRotation(mPlayer.GetSprite().getRotation());
 
 	bullet.velocity.x = sin(ToRadians(bullet.spr.getRotation())) * 150.f * deltatime;
 	bullet.velocity.y = -cos(ToRadians(bullet.spr.getRotation())) * 150.f * deltatime;
 
+	bullet.bInPool = false;
+	
 
-	return bullet;
 }
 
 void Game::UpdateCollisions(const float& deltaTime)
@@ -97,12 +129,24 @@ void Game::UpdateCollisions(const float& deltaTime)
 	{
 		for (auto& b : bullets)
 		{
-			if (a.getGlobalBounds().intersects(b.spr.getGlobalBounds()))
+			if (a.spr.getGlobalBounds().intersects(b.spr.getGlobalBounds()))
 			{
 				// Destroy asteroid
-				asteroids.erase(std::remove_if(asteroids.begin(), asteroids.end(), [&a](sf::Sprite& s) { return a.getPosition() == s.getPosition(); }));
-				bullets.erase(std::remove_if(bullets.begin(), bullets.end(), [&b](Bullet& bull) { return b.spr.getPosition() == b.spr.getPosition(); }));
+				asteroids.erase(std::remove_if(asteroids.begin(), asteroids.end(), [&a](Asteroid& ast) { return a.spr.getPosition() == ast.spr.getPosition(); }));
+
+				b.bInPool = true;
+				b.velocity = { 0, 0};
+				b.spr.setPosition(1380, 800); // Object pool position
+
+				//bullets.erase(std::remove_if(bullets.begin(), bullets.end(), [&b](Bullet& bull) { return b.spr.getPosition() == b.spr.getPosition(); }));
 			}
+		}
+
+		// Check player collision with asteroid
+		if (a.spr.getGlobalBounds().intersects(mPlayer.GetBounds()))
+		{
+			// Make ship get pushed back in opposite dir of asteroid
+
 		}
 	}
 }
