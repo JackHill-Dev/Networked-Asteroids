@@ -2,6 +2,9 @@
 #include "Player.h"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include <random>
+#include <chrono>
+
 
 struct Bullet
 {
@@ -26,10 +29,13 @@ struct Asteroid
 {
 public:
 
-	Asteroid()
+	Asteroid(sf::Vector2f startPos, sf::Vector2f startVel)
 	{
 		texture.loadFromFile("asteroid.png");
 		spr = sf::Sprite(texture);
+		spr.setPosition(startPos);
+		spr.setOrigin(32, 32);
+		velocity = startVel;
 	}
 
 	int health = 5;
@@ -43,6 +49,7 @@ class Game
 {
 public:
 	Game();
+	~Game();
 	void Init();
 	void Update(const float& deltaTime);
 	void Draw(sf::RenderWindow& wnd);
@@ -57,17 +64,17 @@ private:
 	void UpdateCollisions(const float& deltaTime);
 	void Shoot(const float& dt);
 	void WrapObject(sf::Sprite& spr);
-	void DisableBullet(Bullet& bullet);
-	void FireBullet(Bullet& bullet, const float& deltatime);
+	void DisableBullet(Bullet* bullet);
+	void FireBullet(Bullet* bullet, const float& deltatime);
+
+	int RandomNumberGenerator(int min, int max);
+
 	sf::Clock shootClock;
 	sf::Time lastFired;
-	std::vector<Bullet> bullets;
 
-	std::vector<Asteroid> asteroids;
-	Asteroid a1;
-	Asteroid a2;
+	std::vector<Bullet*> bullets;
+	std::vector<Asteroid*> asteroids;
 
-	sf::Texture asteroidTexture;
 	Player mPlayer;
 
 	int width,height;
