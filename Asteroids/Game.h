@@ -2,6 +2,7 @@
 #include "Player.h"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include <iostream>
 #include <random>
 #include <chrono>
 
@@ -66,7 +67,7 @@ private:
 	void WrapObject(sf::Sprite& spr);
 	void DisableBullet(Bullet* bullet);
 	void FireBullet(Bullet* bullet, const float& deltatime);
-
+	void GameOver();
 	int RandomNumberGenerator(int min, int max);
 
 	sf::Clock shootClock;
@@ -76,7 +77,9 @@ private:
 	std::vector<Asteroid*> asteroids;
 
 	Player mPlayer;
+	Player mPlayer2;
 
 	int width,height;
+	bool bGameover = false;
 };
 

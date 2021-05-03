@@ -17,11 +17,17 @@ void Player::Update(const float& deltaTime)
 	spr.move(velocity);
 }
 
+void Player::Update(const float& deltaTime, sf::Vector2f& vel)
+{
+	spr.move(vel);
+}
+
 void Player::Move(const float& deltaTime)
 {
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
 	{
 		spr.rotate(-rotationSpeed * deltaTime);
+		
 	}
 	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
 	{
@@ -35,6 +41,49 @@ void Player::Move(const float& deltaTime)
 	}
 
 
+}
+
+std::string Player::SerializeData()
+{
+	std::string playerData = "Velocity/" + std::to_string(velocity.x) + "," + std::to_string(velocity.y); /*+ "/" +
+								"Rotation/" + std::to_string( spr.getRotation()) + "/";*/
+
+	return playerData;
+}
+
+void Player::DesrializeData(std::string& data)
+{
+	float velX, velY;
+	float rot;
+	size_t pos = 0;
+
+	data.find("/", pos);
+	//++pos;
+
+	std::string result = "";
+	while (data[pos] != '/')
+	{
+		result += data[pos++];
+	}
+
+	if (result == "Velocity")
+	{
+		++pos;
+		result = data[pos];
+		
+		std::string value = "";
+		while (data[pos] != ',')
+			value += data[pos++];
+
+		velX = std::stof(value);
+
+		++pos;
+		result = data[pos];
+		velY = std::stoi(result);
+	}
+
+	//velocity.x = velX;
+	//velocity.y = velY;
 }
 
 const sf::FloatRect& Player::GetBounds() const

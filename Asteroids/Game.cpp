@@ -17,14 +17,11 @@ Game::Game()
 		sf::Vector2f velocity = sf::Vector2f(RandomNumberGenerator(-50, 100), RandomNumberGenerator(-50, 100));
 		sf::Vector2f startPos = sf::Vector2f(RandomNumberGenerator(0, 1280), RandomNumberGenerator(0, 720));
 		asteroids.push_back(new Asteroid(startPos, velocity));
-
 	}
 
 
 
 }
-
-
 
 Game::~Game()
 {
@@ -46,6 +43,9 @@ Game::~Game()
 void Game::Update(const float& deltaTime)
 {
 	mPlayer.Update(deltaTime);
+
+	/*std::string playerData = mPlayer.SerializeData();;
+	mPlayer.DesrializeData(playerData);*/
 
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
 	{
@@ -69,12 +69,15 @@ void Game::Update(const float& deltaTime)
 	UpdateCollisions(deltaTime);
 	WrapObject(mPlayer.GetSprite());
 	
+	if (asteroids.empty())
+	{
+		GameOver();
+	}
 
 }
 
 void Game::Draw(sf::RenderWindow& wnd)
 {
-	
 
 	for (auto& b : bullets)
 	{
@@ -88,6 +91,7 @@ void Game::Draw(sf::RenderWindow& wnd)
 
 	wnd.draw(mPlayer.GetSprite());
 
+	//wnd.draw(mPlayer2.GetSprite());
 }
 
 void Game::Shoot(const float& dt)
@@ -143,6 +147,11 @@ void Game::FireBullet(Bullet* bullet, const float& deltatime)
 
 }
 
+void Game::GameOver()
+{
+	// Handle game over logic
+}
+
 int Game::RandomNumberGenerator(int min, int max)
 {
 	std::uniform_int_distribution<int> distribution(min, max);
@@ -154,6 +163,7 @@ void Game::UpdateCollisions(const float& deltaTime)
 	//// Check bullet collison with asteroids
 	for (auto& a : asteroids)
 	{
+		
 		for (auto& b : bullets)
 		{
 			if (a->spr.getGlobalBounds().intersects(b->spr.getGlobalBounds()))
@@ -169,10 +179,11 @@ void Game::UpdateCollisions(const float& deltaTime)
 		}
 
 		// Check player collision with asteroid
-		if (a->spr.getGlobalBounds().intersects(mPlayer.GetBounds()))
+		if (a->spr.getGlobalBounds().intersects(mPlayer.GetSprite().getGlobalBounds()))
 		{
-			// Make ship get pushed back in opposite direction of asteroid
-
+			// Lose life
+			// Respawn at center of screen in an invulnerable state for a second
+			
 		}
 	}
 }
