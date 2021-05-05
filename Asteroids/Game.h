@@ -54,7 +54,8 @@ public:
 	void Init();
 	void Update(const float& deltaTime);
 	void Draw(sf::RenderWindow& wnd);
-
+	void UpdateGameData(const std::string& gData);
+	std::string SendGameData();
 	float ToRadians(float x)
 	{
 		return	x * (3.14 / 180);

@@ -45,16 +45,19 @@ void Player::Move(const float& deltaTime)
 
 std::string Player::SerializeData()
 {
-	std::string playerData = "Velocity/" + std::to_string(velocity.x) + "," + std::to_string(velocity.y); /*+ "/" +
-								"Rotation/" + std::to_string( spr.getRotation()) + "/";*/
+	double tempVelX = velocity.x;
+	double tempVelY = velocity.y;
+
+	std::string playerData = "Velocity/" + std::to_string(tempVelX) + "," + std::to_string(tempVelY) + "/";
+								//"Rotation/" + std::to_string( spr.getRotation()) + "/";*/
 
 	return playerData;
 }
 
-void Player::DesrializeData(std::string& data)
+void Player::DesrializeData(const std::string& data)
 {
-	float velX, velY;
-	float rot;
+	double velX, velY;
+	int rot;
 	size_t pos = 0;
 
 	data.find("/", pos);
@@ -65,7 +68,7 @@ void Player::DesrializeData(std::string& data)
 	{
 		result += data[pos++];
 	}
-
+	// TODO: improve this algoritm as there will be a lot more data to handle
 	if (result == "Velocity")
 	{
 		++pos;
@@ -78,8 +81,13 @@ void Player::DesrializeData(std::string& data)
 		velX = std::stof(value);
 
 		++pos;
-		result = data[pos];
-		velY = std::stoi(result);
+
+		value = "";
+		while (data[pos] != '/')
+			value += data[pos++];
+
+		
+		velY = std::stof(value);
 	}
 
 	//velocity.x = velX;

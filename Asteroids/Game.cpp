@@ -43,9 +43,8 @@ Game::~Game()
 void Game::Update(const float& deltaTime)
 {
 	mPlayer.Update(deltaTime);
-
-	/*std::string playerData = mPlayer.SerializeData();;
-	mPlayer.DesrializeData(playerData);*/
+	mPlayer2.Update(deltaTime, mPlayer2.GetVelocity());
+	
 
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
 	{
@@ -91,7 +90,17 @@ void Game::Draw(sf::RenderWindow& wnd)
 
 	wnd.draw(mPlayer.GetSprite());
 
-	//wnd.draw(mPlayer2.GetSprite());
+	wnd.draw(mPlayer2.GetSprite());
+}
+
+void Game::UpdateGameData(const std::string& gData)
+{
+	mPlayer2.DesrializeData(gData);
+}
+
+std::string Game::SendGameData()
+{
+	return mPlayer.SerializeData();
 }
 
 void Game::Shoot(const float& dt)

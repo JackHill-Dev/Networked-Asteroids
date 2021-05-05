@@ -13,7 +13,7 @@ public:
 	void Shoot(const float& deltaTime);
 	sf::Time& GetShootDelay() { return fireDelay; }
 	std::string SerializeData();
-	void DesrializeData(std::string& data);
+	void DesrializeData(const std::string& data);
 	const sf::FloatRect& GetBounds() const;
 	 sf::Sprite& GetSprite();
 	 sf::Vector2f& GetVelocity() { return velocity; }
