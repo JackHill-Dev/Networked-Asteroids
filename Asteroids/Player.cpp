@@ -90,8 +90,8 @@ void Player::DesrializeData(const std::string& data)
 		velY = std::stof(value);
 	}
 
-	//velocity.x = velX;
-	//velocity.y = velY;
+	velocity.x = velX;
+	velocity.y = velY;
 }
 
 const sf::FloatRect& Player::GetBounds() const

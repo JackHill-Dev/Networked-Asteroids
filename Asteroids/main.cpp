@@ -4,6 +4,7 @@
 #include <SFML/Window/Keyboard.hpp>
 #include <winsock2.h>
 #include <WS2tcpip.h>
+#include <synchapi.h>
 #include <windows.h>
 #include <iostream>
 #include <queue>
@@ -11,6 +12,7 @@
 #include <process.h>
 #include <string>
 #include <thread>
+#include <mutex>
 #include "Game.h"
 
 #pragma comment(lib, "ws2_32.lib")	// Use this library whilst linking - contains the Winsock2 implementation.
@@ -35,28 +37,28 @@ void ReceiveFunction(SOCKET* sock, bool* running)
 {
 	int iResult, iSendResult;
 	SOCKET ClientSocket = *sock;
-
+	std::string gData = "";
 	const int buffer_size = 1024;
 	char buffer[buffer_size];
 
 	do 
 	{
+		std::cout << "Host recieve thread running..." << std::endl;
+		
 		iResult = recv(ClientSocket, buffer, buffer_size, 0);
+		gData = buffer;
 		if (iResult > 0) {
-			printf("Bytes received: %d\n", iResult);
+			std::cout << buffer << std::endl;
 
-			// Echo the buffer back to the sender
-			iSendResult = send(ClientSocket, buffer, iResult, 0);
-			if (iSendResult == SOCKET_ERROR) {
-				printf("send failed with error: %d\n", WSAGetLastError());
-				closesocket(ClientSocket);
-				WSACleanup();
-				
-			}
-			printf("Bytes sent: %d\n", iSendResult);
+			
+			EnterCriticalSection(&CriticalSection_Recieve);
+			game_data_recieve_queue.push(gData);
+			//printf("Bytes sent: %d\n", iSendResult);
+			//std::cout << gData << std::endl;
+			LeaveCriticalSection(&CriticalSection_Recieve);
 		}
-		else if (iResult == 0)
-			printf("Connection closing...\n");
+		/*else if (iResult == 0)
+			printf("Connection closing...\n");*/
 		else {
 			printf("recv failed with error: %d\n", WSAGetLastError());
 			closesocket(ClientSocket);
@@ -114,7 +116,6 @@ void ClientRcv(SOCKET* sock, bool* appRunning)
 	int iResult;
 	std::string data;
 
-	
 
 	do 
 	{
@@ -133,34 +134,42 @@ void ClientRcv(SOCKET* sock, bool* appRunning)
 			std::cout << "Rcv failed with error: " << WSAGetLastError() << std::endl;
 	} while (iResult > 0);
 
-	//struct sockaddr_in server_address;
-	//int server_address_size = (int)sizeof(server_address);
-	//short port = PORT;	// Port number - can change this, but needs to be the same on both client and server.
-	//const char* server_ip_address = "127.0.0.1";	// The local host - change this for proper IP address of server if not on the local machine.
-	//server_address.sin_family = AF_INET;
-	//server_address.sin_port = htons(port);
-	//server_address.sin_addr.s_addr = inet_addr(server_ip_address);
-
-	//while (appRunning)
-	//{
-	//	std::cout << "Recieve thread running" << std::endl;
-
-	//	int bytes_received = recvfrom(*sock, buffer, buffer_size, 0, (SOCKADDR*)&server_address, &server_address_size);
-	//	if (bytes_received == SOCKET_ERROR)
-	//	{	// If there is an error, deal with it here...
-	//		std::cout << "recvfrom failed with error " << WSAGetLastError();
-	//	}
-	//	else
-	//	{
-	//		EnterCriticalSection(&CS_Client_Rcv);
-	//		std::string vel = buffer;
-	//		game_data_client_rcv_queue.push(vel);
-	//		LeaveCriticalSection(&CS_Client_Rcv);
-	//	}
-	//	
-	//}
+	
 
 	std::cout << "Out of loop" << std::endl;
+}
+
+void ClientSnd(SOCKET* sock, bool* appRunning)
+{
+	SOCKET sendSock = *sock;
+	std::string pData = "";
+	const int buffer_size = 1024;
+	char buffer[buffer_size];
+	SecureZeroMemory(&buffer, buffer_size);
+
+	while (appRunning)
+	{
+		
+		
+		if (game_data_client_snd_queue.size() > 0)
+		{
+			std::cout << "Sending game data..." << std::endl;
+			EnterCriticalSection(&CS_Client_Snd);
+			pData = game_data_client_snd_queue.front();
+			game_data_client_snd_queue.pop();
+			LeaveCriticalSection(&CS_Client_Snd);
+		
+
+			
+		}
+		strcpy_s(buffer, pData.c_str());
+		int clientResult = send(sendSock, buffer, buffer_size, 0);//, 0, (SOCKADDR*)&server_address, server_address_size);
+		if (clientResult == SOCKET_ERROR)
+		{
+			std::cout << "send() failed with error: " << WSAGetLastError() << std::endl;
+		}
+	}
+
 }
 
 void SendFunction(SOCKET* sock, bool* running)
@@ -191,7 +200,7 @@ void SendFunction(SOCKET* sock, bool* running)
 		}
 		SecureZeroMemory(buffer, buffer_size);
 		std::string hel = "Hello anyone there\n";
-		strcpy_s(buffer, hel.c_str());
+		strcpy_s(buffer, gData.c_str());
 		
 		int clientResult = sendto(*sock, buffer, buffer_size, 0 , (SOCKADDR*)&server_address, server_address_size);
 		if (clientResult != 0)
@@ -205,9 +214,48 @@ void SendFunction(SOCKET* sock, bool* running)
 	}
 }
 
+void HostAccept(SOCKET* listenSock, SOCKET* clientSock, int* noClients)
+{
+	int iResult;
+	SOCKET acpt = *clientSock;
+	SOCKET lstn = *listenSock;
+	//while (*noClients != 2)
+	//{
+		// Accept client connections
+	/*iResult = listen(lstn, SOMAXCONN);
+	if (iResult == SOCKET_ERROR) {
+		printf("listen failed with error: %d\n", WSAGetLastError());
+		closesocket(lstn);
+		WSACleanup();
+		}*/
+
+	// Accept a client socket
+	*clientSock = accept(*listenSock, NULL, NULL);
+	if (*clientSock == INVALID_SOCKET) {
+		printf("accept failed with error: %d\n", WSAGetLastError());
+		closesocket(*listenSock);
+		WSACleanup();
+		
+	}
+	else
+	{
+		(*noClients) += 1;
+		//clientSock = &acpt;
+		std::cout << "All Players connected!" << std::endl;
+	}
+
+
+		
+	//}
+	
+	// Close listen socket
+	closesocket(*listenSock);
+}
+
 int RunHostClient()
 {
 	int iResult;
+	int clients = 1;
 	SOCKET ListenSocket = INVALID_SOCKET;
 	SOCKET ClientSocket = INVALID_SOCKET;
 
@@ -256,6 +304,8 @@ int RunHostClient()
 
 	freeaddrinfo(result);
 
+	
+
 	iResult = listen(ListenSocket, SOMAXCONN);
 	if (iResult == SOCKET_ERROR) {
 		printf("listen failed with error: %d\n", WSAGetLastError());
@@ -263,47 +313,10 @@ int RunHostClient()
 		WSACleanup();
 		return 1;
 	}
+	
+	std::thread acceptThread(HostAccept, &ListenSocket, &ClientSocket, &clients);
 
-	// Accept a client socket
-	ClientSocket = accept(ListenSocket, NULL, NULL);
-	if (ClientSocket == INVALID_SOCKET) {
-		printf("accept failed with error: %d\n", WSAGetLastError());
-		closesocket(ListenSocket);
-		WSACleanup();
-		return 1;
-	}
-
-	closesocket(ListenSocket);
-
-	//// Create a unbound socket.
-	//SOCKET Socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	//
-	//if (Socket == INVALID_SOCKET)
-	//{
-	//	std::cout << "Socket creation failed!";
-	//	WSACleanup();
-	//	return 0;
-	//}
-
-	//// Now, try and bind the socket to any incoming IP address on Port 8888.
-	//SOCKADDR_IN serverInf;
-
-	//serverInf.sin_family = AF_INET;				// Address protocol family - internet protocol (IP addressing).
-	//serverInf.sin_addr.s_addr = htonl(INADDR_ANY);	// Will accept any IP address from anywhere.
-	//serverInf.sin_port = htons(27015);			// Port number - can change this, but needs to be the same on both client and server.
-	//int bindResult = ::bind(Socket, (SOCKADDR*)(&serverInf), sizeof(serverInf));
-	//if (bindResult == SOCKET_ERROR)
-	//{
-	//	std::cout << "Unable to bind socket!\r\n";
-	//	WSACleanup();
-	//	return 0;
-	//}
-	//else
-	//{
-	//	std::cout << "Bind Result: " << bindResult << std::endl;
-	//}
-
-
+	
 	sf::RenderWindow window(sf::VideoMode(1280, 720), "Asteroids host");
 
 	Game mGame;
@@ -313,15 +326,27 @@ int RunHostClient()
 
 	bool bRunning = true;
 
-	//InitializeCriticalSectionAndSpinCount(&CriticalSection_Recieve, 1000);
+	InitializeCriticalSectionAndSpinCount(&CriticalSection_Recieve, 1000);
 	//InitializeCriticalSectionAndSpinCount(&CriticalSection_Send, 1000);
 	
-	std::thread recieveThread(ReceiveFunction, &ClientSocket, &bRunning);
-	//std::thread sendThread(SendFunction, &Socket, &bRunning);
+	std::thread recieveThread;
+	std::thread sendThread;
 
 	while (bRunning)
 	{
 		bRunning = window.isOpen();
+
+		if (clients == 2)
+		{
+			//std::cout << "Closing accepting thread..." << std::endl;
+			//acceptThread.join();
+			//std::cout << "Starting recieve thread..." << std::endl;
+			if(!recieveThread.joinable())
+				recieveThread = std::thread(ReceiveFunction, &ClientSocket, &bRunning);
+
+			if (!sendThread.joinable())
+				sendThread = std::thread(SendFunction, &ClientSocket, &bRunning);
+		}
 
 		std::string data;
 
@@ -335,15 +360,16 @@ int RunHostClient()
 				window.close();
 
 		}
-		// Recieve data from client
-		//EnterCriticalSection(&CriticalSection_Recieve);
-		//if (game_data_recieve_queue.size() > 0)
-		//{
-		//	//mGame.UpdateGameData(game_data_recieve_queue.front());
-		//	std::cout << game_data_recieve_queue.front() << std::endl;
-		//	game_data_recieve_queue.pop();
-		//}
-		//LeaveCriticalSection(&CriticalSection_Recieve);	// Leave the critical section.
+		// Recieve data from clients
+		EnterCriticalSection(&CriticalSection_Recieve);
+		if (game_data_recieve_queue.size() > 0)
+		{
+			if(game_data_recieve_queue.front() != "")
+			mGame.UpdateGameData(game_data_recieve_queue.front());
+			std::cout << game_data_recieve_queue.front() << std::endl;
+			game_data_recieve_queue.pop();
+		}
+		LeaveCriticalSection(&CriticalSection_Recieve);	// Leave the critical section.
 
 		
 		mGame.Update(deltatime);
@@ -355,15 +381,18 @@ int RunHostClient()
 		window.display();
 
 		// enter crit section
-		/*EnterCriticalSection(&CriticalSection_Send);
-		game_data_send_queue.push(mGame.SendGameData());
-		LeaveCriticalSection(&CriticalSection_Send);*/
+		//EnterCriticalSection(&CriticalSection_Send);
+		//game_data_send_queue.push(mGame.SendGameData());
+		//LeaveCriticalSection(&CriticalSection_Send);
 		// leave crit section
+
+		
 
 	}
 
 	// Wait for the receiving and sending thread to complete.
-	//sendThread.join();
+	sendThread.join();
+	acceptThread.join();
 	recieveThread.join();
 
 
@@ -455,54 +484,21 @@ int RunNormalClient()
 	// Sockets has now been initialised, so now can send some data to the server....
 
 
-	const int buffer_size = 1024;
-	char buffer[buffer_size];
-	std::string connectedString = "Client connected!";
-	strcpy_s(buffer, connectedString.c_str());
+	//const int buffer_size = 1024;
+	//char buffer[buffer_size];
+	//std::string connectedString = "Client connected!";
+	//strcpy_s(buffer, connectedString.c_str());
 
-	// Send an initial buffer
-	iResult = send(connectSocket, buffer, buffer_size, 0);
-	if (iResult == SOCKET_ERROR) {
-		printf("send failed with error: %d\n", WSAGetLastError());
-		closesocket(connectSocket);
-		WSACleanup();
-		return 1;
-	}
-
-	// shutdown the connection since no more data will be sent
-	iResult = shutdown(connectSocket, SD_SEND);
-	if (iResult == SOCKET_ERROR) {
-		printf("shutdown failed with error: %d\n", WSAGetLastError());
-		closesocket(connectSocket);
-		WSACleanup();
-		return 1;
-	}
-
-	//struct sockaddr_in server_address;
-	//int server_address_size = (int)sizeof(server_address);
-	//short port = PORT;	// Port number - can change this, but needs to be the same on both client and server.
-	//const char* server_ip_address = "127.0.0.1";	// The local host - change this for proper IP address of server if not on the local machine.
-	//server_address.sin_family = AF_INET;
-	//server_address.sin_port = htons(port);
-	//server_address.sin_addr.s_addr = inet_addr(server_ip_address);
-
-	//sockaddr addr;
-	//memcpy(&addr, &server_address, server_address_size);
-
-	//int result  = connect(Socket, &addr, sizeof(addr));
-	//if (result != 0)
-	//{
-	//	std::cout << "Server unavaliable" << std::endl;
-	//}
-	//else
-	//{
-	//	std::cout << "Connected to server" << std::endl;
-	//	memcpy(&server_address, &addr, sizeof(addr));
-
-	//	strcpy_s(buffer, "Client connected!");
-	//	sendto(Socket, buffer, buffer_size, 0, (SOCKADDR*)&server_address, server_address_size);
+	//// Send an initial buffer
+	//iResult = send(connectSocket, buffer, buffer_size, 0);
+	//if (iResult == SOCKET_ERROR) {
+	//	printf("send failed with error: %d\n", WSAGetLastError());
+	//	closesocket(connectSocket);
+	//	WSACleanup();
+	//	return 1;
 	//}
 
+	
 	Game mGame;
 
 	sf::Clock clock;
@@ -512,8 +508,10 @@ int RunNormalClient()
 
 	
 	InitializeCriticalSectionAndSpinCount(&CS_Client_Rcv, 1000);
+	InitializeCriticalSectionAndSpinCount(&CS_Client_Snd, 1000);
 
 	std::thread rcvThread(ClientRcv, &connectSocket, &bRunning);
+	std::thread sndThread(ClientSnd, &connectSocket, &bRunning);
 	
 	sf::RenderWindow window(sf::VideoMode(1280, 720), "Asteroids client");
 
@@ -554,7 +552,7 @@ int RunNormalClient()
 		{
 			std::string vel = game_data_client_rcv_queue.front();
 
-			//mGame.UpdateGameData(vel);
+			mGame.UpdateGameData(vel);
 
 			std::cout << vel << std::endl;
 			game_data_client_rcv_queue.pop();
@@ -562,25 +560,32 @@ int RunNormalClient()
 		LeaveCriticalSection(&CS_Client_Rcv);
 		//-----------------------------------------------
 		
-		if (window.hasFocus())
-		{
-			mGame.Update(deltatime);
+		
+		mGame.Update(deltatime);
 
-			window.clear(sf::Color::Black);
-			mGame.Draw(window);
-		}
+		window.clear(sf::Color::Black);
+		mGame.Draw(window);
+		
 
 		window.display();
 
 		//SecureZeroMemory(buffer, buffer_size * sizeof(char));
 		//// Send current game/frame data
 		std::string posData = mGame.SendGameData();;
-		strcpy_s(buffer, posData.c_str());
-	//	int clientResult = sendto(Socket, buffer, buffer_size, 0, (SOCKADDR*)&server_address, server_address_size);
+		EnterCriticalSection(&CS_Client_Snd);
+		game_data_client_snd_queue.push(posData);
+		LeaveCriticalSection(&CS_Client_Snd);
+		//strcpy_s(buffer, posData.c_str());
+		//int clientResult = send(connectSocket, buffer, buffer_size, 0);//, 0, (SOCKADDR*)&server_address, server_address_size);
+		//if (clientResult == SOCKET_ERROR)
+		//{
+		//	std::cout << "send() failed with error: " << WSAGetLastError() << std::endl;
+		//}
 	}
 	
 
 	rcvThread.join();
+	sndThread.join();
 	return 0;
 }
 
