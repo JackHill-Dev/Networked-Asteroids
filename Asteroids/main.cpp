@@ -2,6 +2,8 @@
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window/Keyboard.hpp>
+#include <SFML/Graphics/Font.hpp>
+#include <SFML/Graphics/Text.hpp>
 #include <winsock2.h>
 #include <WS2tcpip.h>
 #include <synchapi.h>
@@ -41,30 +43,35 @@ void ReceiveFunction(SOCKET* sock, bool* running)
 	const int buffer_size = 1024;
 	char buffer[buffer_size];
 
+
 	do 
 	{
-		std::cout << "Host recieve thread running..." << std::endl;
-		
-		iResult = recv(ClientSocket, buffer, buffer_size, 0);
+		//std::cout << "Host recieve thread running..." << std::endl;
+		SecureZeroMemory(buffer, buffer_size);
+		iResult = recv(*sock, buffer, buffer_size, 0);
 		gData = buffer;
 		if (iResult > 0) {
-			std::cout << buffer << std::endl;
 
-			
 			EnterCriticalSection(&CriticalSection_Recieve);
-			game_data_recieve_queue.push(gData);
-			//printf("Bytes sent: %d\n", iSendResult);
+			if (gData != "" && !gData.empty())
+			{
+				std::cout << gData << std::endl;
+				game_data_recieve_queue.push(gData);
+			}
+
 			//std::cout << gData << std::endl;
 			LeaveCriticalSection(&CriticalSection_Recieve);
 		}
 		/*else if (iResult == 0)
 			printf("Connection closing...\n");*/
-		else {
+		else
+		{
 			printf("recv failed with error: %d\n", WSAGetLastError());
-			closesocket(ClientSocket);
+			closesocket(*sock);
 			WSACleanup();
-			
+
 		}
+	
 	} while (iResult > 0);
 
 	//std::cout << "Starting Winsock on thread." << std::endl;
@@ -114,17 +121,22 @@ void ClientRcv(SOCKET* sock, bool* appRunning)
 	ZeroMemory(buffer, buffer_size);
 
 	int iResult;
-	std::string data;
+	std::string data = "";
 
 
 	do 
 	{
-		std::cout << "Recieve thread running" << std::endl;
-		iResult = recv(rcvSocket, buffer, buffer_size, 0);
+		//std::cout << "Recieve thread running" << std::endl;
+		SecureZeroMemory(buffer, buffer_size);
+		iResult = recv(*sock, buffer, buffer_size, 0);
 		if (iResult > 0)
 		{
 			data = buffer;
 			std::cout << data << std::endl;
+			EnterCriticalSection(&CS_Client_Rcv);
+			if (data != "")
+				game_data_client_rcv_queue.push(data);
+			LeaveCriticalSection(&CS_Client_Rcv);
 		}
 		else if (iResult == 0)
 		{
@@ -149,8 +161,7 @@ void ClientSnd(SOCKET* sock, bool* appRunning)
 
 	while (appRunning)
 	{
-		
-		
+
 		if (game_data_client_snd_queue.size() > 0)
 		{
 			std::cout << "Sending game data..." << std::endl;
@@ -158,15 +169,16 @@ void ClientSnd(SOCKET* sock, bool* appRunning)
 			pData = game_data_client_snd_queue.front();
 			game_data_client_snd_queue.pop();
 			LeaveCriticalSection(&CS_Client_Snd);
-		
 
-			
 		}
-		strcpy_s(buffer, pData.c_str());
-		int clientResult = send(sendSock, buffer, buffer_size, 0);//, 0, (SOCKADDR*)&server_address, server_address_size);
-		if (clientResult == SOCKET_ERROR)
+		if (pData != "")
 		{
-			std::cout << "send() failed with error: " << WSAGetLastError() << std::endl;
+			strcpy_s(buffer, pData.c_str());
+			int clientResult = send(sendSock, buffer, buffer_size, 0);//, 0, (SOCKADDR*)&server_address, server_address_size);
+			if (clientResult == SOCKET_ERROR)
+			{
+				std::cout << "send() failed with error: " << WSAGetLastError() << std::endl;
+			}
 		}
 	}
 
@@ -186,6 +198,13 @@ void SendFunction(SOCKET* sock, bool* running)
 	server_address.sin_port = htons(port);
 	server_address.sin_addr.s_addr = inet_addr(server_ip_address);
 
+	u_long iMode = 0;
+	int iResult;
+
+	/*iResult = ioctlsocket(*sock, FIONBIO, &iMode);
+
+	if (iResult != NOERROR)
+		std::cout << "ioctlsocket failed with error: " << iResult;*/
 	
 	while (running)
 	{
@@ -199,10 +218,9 @@ void SendFunction(SOCKET* sock, bool* running)
 			LeaveCriticalSection(&CriticalSection_Send);
 		}
 		SecureZeroMemory(buffer, buffer_size);
-		std::string hel = "Hello anyone there\n";
 		strcpy_s(buffer, gData.c_str());
 		
-		int clientResult = sendto(*sock, buffer, buffer_size, 0 , (SOCKADDR*)&server_address, server_address_size);
+		int clientResult = send(*sock, buffer, buffer_size, 0);//, (SOCKADDR*)&server_address, server_address_size);
 		if (clientResult != 0)
 		{
 			//std::cout << "Data did not send, error: " << WSAGetLastError() << std::endl;
@@ -228,8 +246,11 @@ void HostAccept(SOCKET* listenSock, SOCKET* clientSock, int* noClients)
 		closesocket(lstn);
 		WSACleanup();
 		}*/
-
+	int value = 1;
 	// Accept a client socket
+	//setsockopt(*clientSock, IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
+
+
 	*clientSock = accept(*listenSock, NULL, NULL);
 	if (*clientSock == INVALID_SOCKET) {
 		printf("accept failed with error: %d\n", WSAGetLastError());
@@ -250,6 +271,20 @@ void HostAccept(SOCKET* listenSock, SOCKET* clientSock, int* noClients)
 	
 	// Close listen socket
 	closesocket(*listenSock);
+}
+
+void SetupConnectingScreen(sf::Font& fnt, sf::Text& txt)
+{
+	fnt.loadFromFile("Assets/Fonts/HISCORE.ttf");
+
+	txt.setFont(fnt);
+	txt.setCharacterSize(32);
+	txt.setFillColor(sf::Color::White);
+	
+	txt.setPosition( 250, 300 );
+	
+	txt.setString("Waiting for clients to connect...");
+
 }
 
 int RunHostClient()
@@ -321,31 +356,36 @@ int RunHostClient()
 
 	Game mGame;
 
+	sf::Font fnt;
+	sf::Text conTxt;
+
 	sf::Clock clock;
 	float deltatime = 0;
 
 	bool bRunning = true;
+	bool gameStart = false;
 
 	InitializeCriticalSectionAndSpinCount(&CriticalSection_Recieve, 1000);
-	//InitializeCriticalSectionAndSpinCount(&CriticalSection_Send, 1000);
+	InitializeCriticalSectionAndSpinCount(&CriticalSection_Send, 1000);
 	
 	std::thread recieveThread;
 	std::thread sendThread;
-
+	SetupConnectingScreen(fnt, conTxt);
 	while (bRunning)
 	{
 		bRunning = window.isOpen();
 
 		if (clients == 2)
 		{
-			//std::cout << "Closing accepting thread..." << std::endl;
-			//acceptThread.join();
-			//std::cout << "Starting recieve thread..." << std::endl;
-			if(!recieveThread.joinable())
+			if (!recieveThread.joinable())
 				recieveThread = std::thread(ReceiveFunction, &ClientSocket, &bRunning);
+			
 
 			if (!sendThread.joinable())
 				sendThread = std::thread(SendFunction, &ClientSocket, &bRunning);
+
+
+			gameStart = true;
 		}
 
 		std::string data;
@@ -364,40 +404,107 @@ int RunHostClient()
 		EnterCriticalSection(&CriticalSection_Recieve);
 		if (game_data_recieve_queue.size() > 0)
 		{
-			if(game_data_recieve_queue.front() != "")
-			mGame.UpdateGameData(game_data_recieve_queue.front());
-			std::cout << game_data_recieve_queue.front() << std::endl;
-			game_data_recieve_queue.pop();
+			if (game_data_recieve_queue.front() != "")
+			{
+				std::cout << game_data_recieve_queue.front() << std::endl;
+				mGame.UpdateGameData(game_data_recieve_queue.front());
+			}
+			game_data_recieve_queue = std::queue<std::string>();
+			//game_data_recieve_queue.pop();
 		}
 		LeaveCriticalSection(&CriticalSection_Recieve);	// Leave the critical section.
 
-		
-		mGame.Update(deltatime);
+		if (gameStart)
+		{
+			mGame.Update(deltatime);
 
-		window.clear(sf::Color::Black);
-		mGame.Draw(window);
+			window.clear(sf::Color::Black);
+			mGame.Draw(window);
 
+		}
+		else
+		{
+			window.clear(sf::Color::Black);
+			window.draw(conTxt);
+		}
 		
+
+		// Movement keys pressed 
+		if (event.type == sf::Event::KeyPressed)
+		{
+			if (event.key.code == sf::Keyboard::Key::W)
+			{
+
+				EnterCriticalSection(&CriticalSection_Send);
+				mGame.mPlayer.move = Forward;
+				game_data_send_queue.push("Forward");
+				LeaveCriticalSection(&CriticalSection_Send);
+
+			}
+			else
+				if (event.key.code == sf::Keyboard::Key::A)
+				{
+
+					EnterCriticalSection(&CriticalSection_Send);
+					mGame.mPlayer.rotate = Left;
+					game_data_send_queue.push("Left");
+					LeaveCriticalSection(&CriticalSection_Send);
+
+				}
+				else
+					if (event.key.code == sf::Keyboard::Key::D)
+					{
+
+						EnterCriticalSection(&CriticalSection_Send);
+						mGame.mPlayer.rotate = Right;
+						game_data_send_queue.push("Right");
+						LeaveCriticalSection(&CriticalSection_Send);
+					}
+		}
+		
+		if (event.type == sf::Event::KeyReleased)
+		{
+			if (event.key.code == sf::Keyboard::Key::W)
+			{
+				EnterCriticalSection(&CriticalSection_Send);
+				mGame.mPlayer.move = Hold;
+				game_data_send_queue.push("Hold");
+				LeaveCriticalSection(&CriticalSection_Send);
+			}
+			else
+			if (event.key.code == sf::Keyboard::Key::A)
+			{
+				EnterCriticalSection(&CriticalSection_Send);
+				mGame.mPlayer.rotate = Still;
+				game_data_send_queue.push("Still");
+				LeaveCriticalSection(&CriticalSection_Send);
+
+			}
+			else
+				if (event.key.code == sf::Keyboard::Key::D)
+				{
+					EnterCriticalSection(&CriticalSection_Send);
+					mGame.mPlayer.rotate = Still;
+					game_data_send_queue.push("Still");
+					LeaveCriticalSection(&CriticalSection_Send);
+
+				}
+
+
+		}
+
 		window.display();
-
-		// enter crit section
-		//EnterCriticalSection(&CriticalSection_Send);
-		//game_data_send_queue.push(mGame.SendGameData());
-		//LeaveCriticalSection(&CriticalSection_Send);
-		// leave crit section
-
-		
 
 	}
 
 	// Wait for the receiving and sending thread to complete.
 	sendThread.join();
-	acceptThread.join();
 	recieveThread.join();
-
+	acceptThread.join();
 
 	return 0;
 }
+
 
 int RunNormalClient()
 {
@@ -456,49 +563,7 @@ int RunNormalClient()
 		WSACleanup();
 		return 1;
 	}
-	//// Create our socket
-	//SOCKET Socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	//if (Socket == INVALID_SOCKET)
-	//{
-	//	std::cout << "Winsock error - Socket creation Failed!\r\n";
-	//	WSACleanup();
-	//	return 0;
-	//}
 
-
-	// Resolve IP address for hostname.
-	//struct hostent* host;
-
-	//// Change this to point to server, or ip address...
-	//
-	//if ((host = gethostbyname("localhost")) == NULL)   // In this case 'localhost' is the local machine. Change this to a proper IP address if connecting to another machine on the network.
-	//{
-	//	std::cout << "Failed to resolve hostname.\r\n";
-	//	WSACleanup();
-	//	return 0;
-	//}
-
-	
-
-	
-	// Sockets has now been initialised, so now can send some data to the server....
-
-
-	//const int buffer_size = 1024;
-	//char buffer[buffer_size];
-	//std::string connectedString = "Client connected!";
-	//strcpy_s(buffer, connectedString.c_str());
-
-	//// Send an initial buffer
-	//iResult = send(connectSocket, buffer, buffer_size, 0);
-	//if (iResult == SOCKET_ERROR) {
-	//	printf("send failed with error: %d\n", WSAGetLastError());
-	//	closesocket(connectSocket);
-	//	WSACleanup();
-	//	return 1;
-	//}
-
-	
 	Game mGame;
 
 	sf::Clock clock;
@@ -511,8 +576,10 @@ int RunNormalClient()
 	InitializeCriticalSectionAndSpinCount(&CS_Client_Snd, 1000);
 
 	std::thread rcvThread(ClientRcv, &connectSocket, &bRunning);
+
 	std::thread sndThread(ClientSnd, &connectSocket, &bRunning);
-	
+
+
 	sf::RenderWindow window(sf::VideoMode(1280, 720), "Asteroids client");
 
 
@@ -529,33 +596,17 @@ int RunNormalClient()
 				window.close();
 
 		}
-		//SecureZeroMemory(buffer, buffer_size);
-
-		//// Get up to date data before game update loop
-		//int bytes_received = recvfrom(Socket, buffer, buffer_size, 0, (SOCKADDR*)&server_address, &server_address_size);
-
-		//if (bytes_received == SOCKET_ERROR)
-		//{	// If there is an error, deal with it here...
-		//	std::cout << "recvfrom failed with error " << WSAGetLastError();
-		//}
-		//else
-		//{
-		//	std::string vel = buffer;
-		//	mGame.UpdateGameData(vel);
-		//	//std::string acknowledge = buffer;
-		//	std::cout << vel.c_str() << std::endl;
-		//
-		//}
-
+		
 		EnterCriticalSection(&CS_Client_Rcv);
 		if (game_data_client_rcv_queue.size() > 0)
 		{
-			std::string vel = game_data_client_rcv_queue.front();
+			std::string command = game_data_client_rcv_queue.front();
 
-			mGame.UpdateGameData(vel);
+			mGame.UpdateGameData(command);
 
-			std::cout << vel << std::endl;
-			game_data_client_rcv_queue.pop();
+			std::cout << command << std::endl;
+			game_data_recieve_queue = std::queue<std::string>();
+			//game_data_client_rcv_queue.pop();
 		}
 		LeaveCriticalSection(&CS_Client_Rcv);
 		//-----------------------------------------------
@@ -569,18 +620,69 @@ int RunNormalClient()
 
 		window.display();
 
-		//SecureZeroMemory(buffer, buffer_size * sizeof(char));
 		//// Send current game/frame data
-		std::string posData = mGame.SendGameData();;
-		EnterCriticalSection(&CS_Client_Snd);
-		game_data_client_snd_queue.push(posData);
-		LeaveCriticalSection(&CS_Client_Snd);
-		//strcpy_s(buffer, posData.c_str());
-		//int clientResult = send(connectSocket, buffer, buffer_size, 0);//, 0, (SOCKADDR*)&server_address, server_address_size);
-		//if (clientResult == SOCKET_ERROR)
-		//{
-		//	std::cout << "send() failed with error: " << WSAGetLastError() << std::endl;
-		//}
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
+		{
+			
+				EnterCriticalSection(&CS_Client_Snd);
+				mGame.mPlayer.move = Forward;
+				game_data_client_snd_queue.push("Forward");
+				LeaveCriticalSection(&CS_Client_Snd);
+			
+		}
+		else
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
+		{
+
+			EnterCriticalSection(&CS_Client_Snd);
+			mGame.mPlayer.rotate = Left;
+			game_data_client_snd_queue.push("Left");
+			LeaveCriticalSection(&CS_Client_Snd);
+
+		}
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
+		{
+			EnterCriticalSection(&CS_Client_Snd);
+			mGame.mPlayer.rotate = Right;
+			game_data_client_snd_queue.push("Right");
+			LeaveCriticalSection(&CS_Client_Snd);
+
+		}
+		else
+		// Check when movement keys are released
+		if (event.type == sf::Event::KeyReleased)
+		{
+			if (event.key.code == sf::Keyboard::Key::W)
+			{
+
+				EnterCriticalSection(&CS_Client_Snd);
+				mGame.mPlayer.move = Hold;
+				game_data_client_snd_queue.push("Hold");
+				LeaveCriticalSection(&CS_Client_Snd);
+				
+			}
+			else
+			if (event.key.code == sf::Keyboard::Key::A)
+			{
+
+				EnterCriticalSection(&CS_Client_Snd);
+				mGame.mPlayer.rotate = Still;
+				game_data_client_snd_queue.push("Still");
+				LeaveCriticalSection(&CS_Client_Snd);
+			}
+			else
+			if (event.key.code == sf::Keyboard::Key::D)
+			{
+
+				EnterCriticalSection(&CS_Client_Snd);
+				mGame.mPlayer.rotate = Still;
+				game_data_client_snd_queue.push("Still");
+				LeaveCriticalSection(&CS_Client_Snd);
+				break;
+			}
+
+		}
+
 	}
 	
 
@@ -591,12 +693,6 @@ int RunNormalClient()
 
 int main()
 {
-	//sf::RenderWindow window(sf::VideoMode(1280, 720), "Asteroids");
-
-	/*Game mGame;
-
-	sf::Clock clock;
-	float deltatime = 0;*/
 
 	char host = ' ';
 	std::cout << "Is this the host client (y/n)" << std::endl;

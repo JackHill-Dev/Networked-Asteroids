@@ -2,6 +2,8 @@
 #include "Player.h"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include <SFML/Graphics/Font.hpp>
+#include <SFML/Graphics/Text.hpp>
 #include <iostream>
 #include <random>
 #include <chrono>
@@ -43,7 +45,7 @@ public:
 	sf::Vector2f velocity = {0.1,0.1};
 	sf::Sprite spr;
 	sf::Texture texture;
-
+	
 };
 
 class Game
@@ -54,13 +56,13 @@ public:
 	void Init();
 	void Update(const float& deltaTime);
 	void Draw(sf::RenderWindow& wnd);
-	void UpdateGameData(const std::string& gData);
+	void UpdateGameData(std::string& gData);
 	std::string SendGameData();
 	float ToRadians(float x)
 	{
 		return	x * (3.14 / 180);
 	}
-
+	Player mPlayer;
 
 private:
 	void UpdateCollisions(const float& deltaTime);
@@ -68,6 +70,7 @@ private:
 	void WrapObject(sf::Sprite& spr);
 	void DisableBullet(Bullet* bullet);
 	void FireBullet(Bullet* bullet, const float& deltatime);
+	void SetTextProperties(sf::Text& txt, const sf::Vector2f& pos);
 	void GameOver();
 	int RandomNumberGenerator(int min, int max);
 
@@ -77,8 +80,16 @@ private:
 	std::vector<Bullet*> bullets;
 	std::vector<Asteroid*> asteroids;
 
-	Player mPlayer;
+
 	Player mPlayer2;
+
+	// Text objects
+	sf::Text mPlayer1Txt;
+	sf::Text mPlayer1LivesTxt;
+	sf::Text mPlayer2Txt;
+	sf::Text mPlayer2LivesTxt;
+
+	sf::Font scoreFnt;
 
 	int width,height;
 	bool bGameover = false;

@@ -3,12 +3,22 @@
 std::mt19937 random_number_engine(time(0));
 Game::Game()
 {
+	scoreFnt.loadFromFile("Assets/Fonts/HISCORE.ttf");
+
+	mPlayer2.SetSpriteColor(sf::Color::Red);
+
+	SetTextProperties(mPlayer1Txt, { 10,0 });
+	SetTextProperties(mPlayer1LivesTxt, { 10,20 });
+
+	SetTextProperties(mPlayer2Txt, { 1120,0 });
+	SetTextProperties(mPlayer2LivesTxt, { 1120,20 });
+
 	bullets.reserve(100);
 	asteroids.reserve(50);
+
 	// Fill bullets pool
 	for (int i = 0; i < 100; ++i)
 	{
-		
 		bullets.push_back(new Bullet());
 	}
 
@@ -43,7 +53,7 @@ Game::~Game()
 void Game::Update(const float& deltaTime)
 {
 	mPlayer.Update(deltaTime);
-	mPlayer2.Update(deltaTime, mPlayer2.GetVelocity());
+	mPlayer2.Update(deltaTime);
 	
 
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
@@ -67,7 +77,9 @@ void Game::Update(const float& deltaTime)
 
 	UpdateCollisions(deltaTime);
 	WrapObject(mPlayer.GetSprite());
+	WrapObject(mPlayer2.GetSprite());
 	
+
 	if (asteroids.empty())
 	{
 		GameOver();
@@ -88,12 +100,24 @@ void Game::Draw(sf::RenderWindow& wnd)
 		wnd.draw(a->spr);
 	}
 
+
 	wnd.draw(mPlayer.GetSprite());
 
 	wnd.draw(mPlayer2.GetSprite());
+
+	mPlayer1Txt.setString("P1: " + std::to_string( mPlayer.score));
+	mPlayer1LivesTxt.setString("Lives: " + std::to_string( mPlayer.lives));
+
+	mPlayer2Txt.setString("P2: " + std::to_string( mPlayer2.score));
+	mPlayer2LivesTxt.setString("Lives: " + std::to_string( mPlayer2.lives));
+
+	wnd.draw(mPlayer1Txt);
+	wnd.draw(mPlayer1LivesTxt);
+	wnd.draw(mPlayer2Txt);
+	wnd.draw(mPlayer2LivesTxt);
 }
 
-void Game::UpdateGameData(const std::string& gData)
+void Game::UpdateGameData( std::string& gData)
 {
 	mPlayer2.DesrializeData(gData);
 }
@@ -156,6 +180,15 @@ void Game::FireBullet(Bullet* bullet, const float& deltatime)
 
 }
 
+void Game::SetTextProperties(sf::Text& txt, const sf::Vector2f& pos)
+{
+	txt.setFont(scoreFnt);
+	txt.setCharacterSize(24);
+	txt.setFillColor(sf::Color::White);
+	txt.setStyle(sf::Text::Bold);
+	txt.setPosition(pos);
+}
+
 void Game::GameOver()
 {
 	// Handle game over logic
@@ -179,7 +212,7 @@ void Game::UpdateCollisions(const float& deltaTime)
 			{
 				// Destroy asteroid
 				asteroids.erase(std::remove_if(asteroids.begin(), asteroids.end(), [&a](Asteroid* ast) { return a->spr.getPosition() == ast->spr.getPosition(); }));
-
+				mPlayer.AddScore(10);
 				b->bInPool = true;
 				b->velocity = { 0, 0};
 				b->spr.setPosition(1380, 800); // Object pool position
@@ -190,9 +223,15 @@ void Game::UpdateCollisions(const float& deltaTime)
 		// Check player collision with asteroid
 		if (a->spr.getGlobalBounds().intersects(mPlayer.GetSprite().getGlobalBounds()))
 		{
-			// Lose life
-			// Respawn at center of screen in an invulnerable state for a second
+			//if (mPlayer.lives > 0)
+			//{
+			//	// Lose life
+			//	mPlayer.RemoveLife();
+			//	// Respawn at center of screen in an invulnerable state for a second
+			//	mPlayer.GetSprite().setPosition({ 640, 360 });
+			//}
 			
+				
 		}
 	}
 }
