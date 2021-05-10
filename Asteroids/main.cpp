@@ -118,7 +118,7 @@ void ClientRcv(SOCKET* sock, bool* appRunning)
 	const int buffer_size = 1024;
 	char buffer[buffer_size];
 
-	ZeroMemory(buffer, buffer_size);
+	//ZeroMemory(buffer, buffer_size);
 
 	int iResult;
 	std::string data = "";
@@ -134,6 +134,7 @@ void ClientRcv(SOCKET* sock, bool* appRunning)
 			data = buffer;
 			std::cout << data << std::endl;
 			EnterCriticalSection(&CS_Client_Rcv);
+			
 			if (data != "")
 				game_data_client_rcv_queue.push(data);
 			LeaveCriticalSection(&CS_Client_Rcv);
@@ -164,7 +165,6 @@ void ClientSnd(SOCKET* sock, bool* appRunning)
 
 		if (game_data_client_snd_queue.size() > 0)
 		{
-			std::cout << "Sending game data..." << std::endl;
 			EnterCriticalSection(&CS_Client_Snd);
 			pData = game_data_client_snd_queue.front();
 			game_data_client_snd_queue.pop();
@@ -205,18 +205,19 @@ void SendFunction(SOCKET* sock, bool* running)
 
 	if (iResult != NOERROR)
 		std::cout << "ioctlsocket failed with error: " << iResult;*/
-	
+	std::string gData = "";
 	while (running)
 	{
-		std::string gData = "";
-		
+		EnterCriticalSection(&CriticalSection_Send);
 		if (game_data_send_queue.size() > 0)
 		{
-			EnterCriticalSection(&CriticalSection_Send);
+			
 			gData = game_data_send_queue.front();
 			game_data_send_queue.pop();
-			LeaveCriticalSection(&CriticalSection_Send);
+			
 		}
+		LeaveCriticalSection(&CriticalSection_Send);
+
 		SecureZeroMemory(buffer, buffer_size);
 		strcpy_s(buffer, gData.c_str());
 		
@@ -370,7 +371,9 @@ int RunHostClient()
 	
 	std::thread recieveThread;
 	std::thread sendThread;
+
 	SetupConnectingScreen(fnt, conTxt);
+	bool keyPressed = false;
 	while (bRunning)
 	{
 		bRunning = window.isOpen();
@@ -394,32 +397,74 @@ int RunHostClient()
 
 		deltatime = clock.restart().asSeconds();
 
-		while (window.pollEvent(event))
-		{
-			if (event.type == sf::Event::Closed)
-				window.close();
-
-		}
 		// Recieve data from clients
 		EnterCriticalSection(&CriticalSection_Recieve);
 		if (game_data_recieve_queue.size() > 0)
 		{
 			if (game_data_recieve_queue.front() != "")
 			{
-				std::cout << game_data_recieve_queue.front() << std::endl;
 				mGame.UpdateGameData(game_data_recieve_queue.front());
+				game_data_recieve_queue = std::queue<std::string>();
 			}
-			game_data_recieve_queue = std::queue<std::string>();
+			
 			//game_data_recieve_queue.pop();
 		}
 		LeaveCriticalSection(&CriticalSection_Recieve);	// Leave the critical section.
+		std::string command = " ";
+		while (window.pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+				window.close();
 
+			switch (event.type)
+			{
+			case sf::Event::KeyPressed:
+				keyPressed = true;
+				break;
+			case sf::Event::KeyReleased:
+				keyPressed = false;
+				break;
+			}
+		}
+		
 		if (gameStart)
 		{
+
 			mGame.Update(deltatime);
 
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) && keyPressed)
+			{
+
+				mGame.mPlayer.move = Forward;
+				command = "Forward";
+
+			}
+			
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) && keyPressed)
+			{
+				mGame.mPlayer.rotate = Left;
+				command = "Left";
+			}
+			else
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) && keyPressed)
+				{
+					mGame.mPlayer.rotate = Right;
+					command = "Right";
+				}
+				else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::D) && !sf::Keyboard::isKeyPressed(sf::Keyboard::A) && !keyPressed);
+				{
+					mGame.mPlayer.rotate = Still;
+					command = "Still";
+				}
+			
+		
+		
 			window.clear(sf::Color::Black);
 			mGame.Draw(window);
+
+			EnterCriticalSection(&CriticalSection_Send);
+			game_data_send_queue.push(command);
+			LeaveCriticalSection(&CriticalSection_Send);
 
 		}
 		else
@@ -429,72 +474,9 @@ int RunHostClient()
 		}
 		
 
-		// Movement keys pressed 
-		if (event.type == sf::Event::KeyPressed)
-		{
-			if (event.key.code == sf::Keyboard::Key::W)
-			{
-
-				EnterCriticalSection(&CriticalSection_Send);
-				mGame.mPlayer.move = Forward;
-				game_data_send_queue.push("Forward");
-				LeaveCriticalSection(&CriticalSection_Send);
-
-			}
-			else
-				if (event.key.code == sf::Keyboard::Key::A)
-				{
-
-					EnterCriticalSection(&CriticalSection_Send);
-					mGame.mPlayer.rotate = Left;
-					game_data_send_queue.push("Left");
-					LeaveCriticalSection(&CriticalSection_Send);
-
-				}
-				else
-					if (event.key.code == sf::Keyboard::Key::D)
-					{
-
-						EnterCriticalSection(&CriticalSection_Send);
-						mGame.mPlayer.rotate = Right;
-						game_data_send_queue.push("Right");
-						LeaveCriticalSection(&CriticalSection_Send);
-					}
-		}
-		
-		if (event.type == sf::Event::KeyReleased)
-		{
-			if (event.key.code == sf::Keyboard::Key::W)
-			{
-				EnterCriticalSection(&CriticalSection_Send);
-				mGame.mPlayer.move = Hold;
-				game_data_send_queue.push("Hold");
-				LeaveCriticalSection(&CriticalSection_Send);
-			}
-			else
-			if (event.key.code == sf::Keyboard::Key::A)
-			{
-				EnterCriticalSection(&CriticalSection_Send);
-				mGame.mPlayer.rotate = Still;
-				game_data_send_queue.push("Still");
-				LeaveCriticalSection(&CriticalSection_Send);
-
-			}
-			else
-				if (event.key.code == sf::Keyboard::Key::D)
-				{
-					EnterCriticalSection(&CriticalSection_Send);
-					mGame.mPlayer.rotate = Still;
-					game_data_send_queue.push("Still");
-					LeaveCriticalSection(&CriticalSection_Send);
-
-				}
-
-
-		}
-
 		window.display();
 
+		
 	}
 
 	// Wait for the receiving and sending thread to complete.
@@ -582,7 +564,7 @@ int RunNormalClient()
 
 	sf::RenderWindow window(sf::VideoMode(1280, 720), "Asteroids client");
 
-
+	std::string command = "";
 	while (bRunning)
 	{
 		bRunning = window.isOpen();
@@ -603,7 +585,6 @@ int RunNormalClient()
 			std::string command = game_data_client_rcv_queue.front();
 
 			mGame.UpdateGameData(command);
-
 			std::cout << command << std::endl;
 			game_data_recieve_queue = std::queue<std::string>();
 			//game_data_client_rcv_queue.pop();
@@ -614,75 +595,48 @@ int RunNormalClient()
 		
 		mGame.Update(deltatime);
 
+
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+		{
+
+			mGame.mPlayer.move = Forward;
+			command = "Forward";
+
+		}
+		/*else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+		{
+			mGame.mPlayer.move = Hold;
+			command = "Hold";
+		}*/
+		else
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+		{
+			mGame.mPlayer.rotate = Left;
+			command = "Left";
+		}
+		else
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+		{
+			mGame.mPlayer.rotate = Right;
+			command = "Right";
+		}
+		else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::D) || !sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+		{
+			mGame.mPlayer.rotate = Still;
+			command = "Still";
+		}
+
+
 		window.clear(sf::Color::Black);
 		mGame.Draw(window);
 		
 
 		window.display();
 
-		//// Send current game/frame data
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
-		{
-			
-				EnterCriticalSection(&CS_Client_Snd);
-				mGame.mPlayer.move = Forward;
-				game_data_client_snd_queue.push("Forward");
-				LeaveCriticalSection(&CS_Client_Snd);
-			
-		}
-		else
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
-		{
-
-			EnterCriticalSection(&CS_Client_Snd);
-			mGame.mPlayer.rotate = Left;
-			game_data_client_snd_queue.push("Left");
-			LeaveCriticalSection(&CS_Client_Snd);
-
-		}
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
-		{
-			EnterCriticalSection(&CS_Client_Snd);
-			mGame.mPlayer.rotate = Right;
-			game_data_client_snd_queue.push("Right");
-			LeaveCriticalSection(&CS_Client_Snd);
-
-		}
-		else
-		// Check when movement keys are released
-		if (event.type == sf::Event::KeyReleased)
-		{
-			if (event.key.code == sf::Keyboard::Key::W)
-			{
-
-				EnterCriticalSection(&CS_Client_Snd);
-				mGame.mPlayer.move = Hold;
-				game_data_client_snd_queue.push("Hold");
-				LeaveCriticalSection(&CS_Client_Snd);
-				
-			}
-			else
-			if (event.key.code == sf::Keyboard::Key::A)
-			{
-
-				EnterCriticalSection(&CS_Client_Snd);
-				mGame.mPlayer.rotate = Still;
-				game_data_client_snd_queue.push("Still");
-				LeaveCriticalSection(&CS_Client_Snd);
-			}
-			else
-			if (event.key.code == sf::Keyboard::Key::D)
-			{
-
-				EnterCriticalSection(&CS_Client_Snd);
-				mGame.mPlayer.rotate = Still;
-				game_data_client_snd_queue.push("Still");
-				LeaveCriticalSection(&CS_Client_Snd);
-				break;
-			}
-
-		}
-
+		
+		EnterCriticalSection(&CS_Client_Snd);
+		game_data_client_snd_queue.push(command);
+		LeaveCriticalSection(&CS_Client_Snd);
 	}
 	
 

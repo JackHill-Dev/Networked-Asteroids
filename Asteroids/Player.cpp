@@ -1,6 +1,6 @@
 #include "Player.h"
 #include <SFML/Window/Keyboard.hpp>
-
+#include <iostream>
 
 Player::Player()
 {
@@ -61,12 +61,16 @@ void Player::Move(const float& deltaTime) //,sf::Keyboard::key& kwy)
 		velocity.y += -cos(ToRadians(spr.getRotation())) * thrustSpeed * deltaTime;
 
 	}
-
-	if (move == Hold);
+	else
 	{
+		if (velocity.x > 0 || velocity.y > 0)
+		{
+			velocity.x *= 0.9 * deltaTime;
+			velocity.y *= 0.9 * deltaTime;
+		}
 		
 	}
-	
+
 
 
 }
