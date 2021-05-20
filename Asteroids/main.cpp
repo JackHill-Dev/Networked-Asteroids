@@ -16,6 +16,7 @@
 #include <thread>
 #include <mutex>
 #include "Game.h"
+#include "Network.h"
 
 #pragma comment(lib, "ws2_32.lib")	// Use this library whilst linking - contains the Winsock2 implementation.
 #define PORT 27015;
@@ -53,7 +54,7 @@ void ReceiveFunction(SOCKET* sock, bool* running)
 		if (iResult > 0) {
 
 			EnterCriticalSection(&CriticalSection_Recieve);
-			if (gData != "" && !gData.empty())
+			if (gData.find("\0") != std::string::npos)
 			{
 				std::cout << gData << std::endl;
 				game_data_recieve_queue.push(gData);
@@ -74,41 +75,7 @@ void ReceiveFunction(SOCKET* sock, bool* running)
 	
 	} while (iResult > 0);
 
-	//std::cout << "Starting Winsock on thread." << std::endl;
-	////bool finished = false;
 
-	//// Repeat 
-	//while (running)
-	//{
-	//	const int buffer_size = 1024;// sizeof(sf::Vector2f);
-	//	char buffer[buffer_size];	// Space for the data.
-
-	//	struct sockaddr_in client_address;	// Placeholder for client address information - 'recvfrom' will fill this in and return the size of this data in client_address_size.
-	//	int client_address_size = sizeof(client_address);
-
-	//	std::cout << "Waiting for data from client..." << std::endl;
-	//	SecureZeroMemory(buffer, buffer_size);
-	//	int bytes_received = recvfrom(*sock, buffer, buffer_size, 0, (SOCKADDR*)&client_address, &client_address_size);
-
-	//	if (bytes_received == SOCKET_ERROR)
-	//	{	// If there is an error, deal with it here...
-	//		std::cout << "'recvfrom' failed with error " << WSAGetLastError();
-	//		std::cout << std::endl;
-	//	}
-	//	else
-	//	{
-	//		// No error, so put the data on the queue for the main thread.
-	//		std::string t = buffer;	// t contains the string sent here from the current client.
-
-	//		if (t == "quit") *running = true;	// Message from the main thread to terminate this thread.
-
-	//		EnterCriticalSection(&CriticalSection_Recieve);
-	//		game_data_recieve_queue.push(t);
-	//		LeaveCriticalSection(&CriticalSection_Recieve);
-
-	//	}
-	//}
-	
 }
 
 void ClientRcv(SOCKET* sock, bool* appRunning)
@@ -118,7 +85,6 @@ void ClientRcv(SOCKET* sock, bool* appRunning)
 	const int buffer_size = 1024;
 	char buffer[buffer_size];
 
-	//ZeroMemory(buffer, buffer_size);
 
 	int iResult;
 	std::string data = "";
@@ -132,11 +98,14 @@ void ClientRcv(SOCKET* sock, bool* appRunning)
 		if (iResult > 0)
 		{
 			data = buffer;
-			std::cout << data << std::endl;
+			
 			EnterCriticalSection(&CS_Client_Rcv);
 			
-			if (data != "")
+			if (data.find("\0") != std::string::npos)
+			{
+				std::cout << data << std::endl;
 				game_data_client_rcv_queue.push(data);
+			}
 			LeaveCriticalSection(&CS_Client_Rcv);
 		}
 		else if (iResult == 0)
@@ -171,6 +140,7 @@ void ClientSnd(SOCKET* sock, bool* appRunning)
 			LeaveCriticalSection(&CS_Client_Snd);
 
 		}
+
 		if (pData != "")
 		{
 			strcpy_s(buffer, pData.c_str());
@@ -356,6 +326,8 @@ int RunHostClient()
 	sf::RenderWindow window(sf::VideoMode(1280, 720), "Asteroids host");
 
 	Game mGame;
+	Network serverNetwork;
+	
 
 	sf::Font fnt;
 	sf::Text conTxt;
@@ -396,21 +368,21 @@ int RunHostClient()
 		sf::Event event;
 
 		deltatime = clock.restart().asSeconds();
-
+		std::string command = " ";
 		// Recieve data from clients
 		EnterCriticalSection(&CriticalSection_Recieve);
 		if (game_data_recieve_queue.size() > 0)
 		{
 			if (game_data_recieve_queue.front() != "")
 			{
-				mGame.UpdateGameData(game_data_recieve_queue.front());
+				mGame.UpdateGameData(deltatime, game_data_recieve_queue.front());
 				game_data_recieve_queue = std::queue<std::string>();
 			}
 			
 			//game_data_recieve_queue.pop();
 		}
 		LeaveCriticalSection(&CriticalSection_Recieve);	// Leave the critical section.
-		std::string command = " ";
+	
 		while (window.pollEvent(event))
 		{
 			if (event.type == sf::Event::Closed)
@@ -446,23 +418,28 @@ int RunHostClient()
 				command = "Left";
 			}
 			else
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) && keyPressed)
-				{
-					mGame.mPlayer.rotate = Right;
-					command = "Right";
-				}
-				else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::D) && !sf::Keyboard::isKeyPressed(sf::Keyboard::A) && !keyPressed);
-				{
-					mGame.mPlayer.rotate = Still;
-					command = "Still";
-				}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) && keyPressed)
+			{
+				mGame.mPlayer.rotate = Right;
+				command = "Right";
+			}
+			/*else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::D) && !sf::Keyboard::isKeyPressed(sf::Keyboard::A) && !keyPressed);
+			{
+				mGame.mPlayer.rotate = Still;
+				command = "Still";
+			}*/
 			
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+			{
+				command = "Fire";
+			}
 		
 		
 			window.clear(sf::Color::Black);
 			mGame.Draw(window);
 
 			EnterCriticalSection(&CriticalSection_Send);
+			command += "\0";
 			game_data_send_queue.push(command);
 			LeaveCriticalSection(&CriticalSection_Send);
 
@@ -546,6 +523,16 @@ int RunNormalClient()
 		return 1;
 	}
 
+	u_long iMode = 1;
+	iResult = ioctlsocket(connectSocket, FIONBIO, &iMode);
+	if (iResult == SOCKET_ERROR)
+	{
+		std::cout << "ioctSocket failed with error: " << WSAGetLastError() << std::endl;
+	}
+
+	char value = 1;
+	setsockopt(connectSocket, IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
+
 	Game mGame;
 
 	sf::Clock clock;
@@ -559,8 +546,11 @@ int RunNormalClient()
 
 	std::thread rcvThread(ClientRcv, &connectSocket, &bRunning);
 
-	std::thread sndThread(ClientSnd, &connectSocket, &bRunning);
-
+	//std::thread sndThread(ClientSnd, &connectSocket, &bRunning);
+	const int bufferSize = 1024;
+	char buffer[bufferSize];
+	std::string test = "ButtonPress with non blocking socket";
+	strcpy_s(buffer, test.c_str());
 
 	sf::RenderWindow window(sf::VideoMode(1280, 720), "Asteroids client");
 
@@ -568,6 +558,10 @@ int RunNormalClient()
 	while (bRunning)
 	{
 		bRunning = window.isOpen();
+
+
+		
+
 		sf::Event event;
 
 		deltatime = clock.restart().asSeconds();
@@ -584,7 +578,7 @@ int RunNormalClient()
 		{
 			std::string command = game_data_client_rcv_queue.front();
 
-			mGame.UpdateGameData(command);
+			mGame.UpdateGameData(deltatime, command);
 			std::cout << command << std::endl;
 			game_data_recieve_queue = std::queue<std::string>();
 			//game_data_client_rcv_queue.pop();
@@ -620,11 +614,15 @@ int RunNormalClient()
 			mGame.mPlayer.rotate = Right;
 			command = "Right";
 		}
-		else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::D) || !sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+		/*else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::D) || !sf::Keyboard::isKeyPressed(sf::Keyboard::A))
 		{
 			mGame.mPlayer.rotate = Still;
 			command = "Still";
-		}
+		}*/
+
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+			send(connectSocket, buffer, bufferSize, 0);
+			//command = "Fire";
 
 
 		window.clear(sf::Color::Black);
@@ -635,13 +633,14 @@ int RunNormalClient()
 
 		
 		EnterCriticalSection(&CS_Client_Snd);
+		command += "\0";
 		game_data_client_snd_queue.push(command);
 		LeaveCriticalSection(&CS_Client_Snd);
 	}
 	
 
 	rcvThread.join();
-	sndThread.join();
+	//sndThread.join();
 	return 0;
 }
 
@@ -657,7 +656,7 @@ int main()
 		RunHostClient();
 	}
 	else if (host == 'n')
-		RunNormalClient();// Use normal client connection logic
+		RunNormalClient(); // Use normal client connection logic
 	else
 		std::cout << "Invalid command!" << std::endl;
 

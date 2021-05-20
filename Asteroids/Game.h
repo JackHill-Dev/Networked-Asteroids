@@ -53,10 +53,9 @@ class Game
 public:
 	Game();
 	~Game();
-	void Init();
 	void Update(const float& deltaTime);
 	void Draw(sf::RenderWindow& wnd);
-	void UpdateGameData(std::string& gData);
+	void UpdateGameData(float& dt, std::string& gData);
 	std::string SendGameData();
 	float ToRadians(float x)
 	{
@@ -66,18 +65,20 @@ public:
 
 private:
 	void UpdateCollisions(const float& deltaTime);
-	void Shoot(const float& dt);
+	void Shoot(const float& dt, Player& originPlayer, std::vector<Bullet*>& asteroidPool);
 	void WrapObject(sf::Sprite& spr);
 	void DisableBullet(Bullet* bullet);
-	void FireBullet(Bullet* bullet, const float& deltatime);
+	void FireBullet(Player& originPlayer, Bullet* bullet, const float& deltatime);
 	void SetTextProperties(sf::Text& txt, const sf::Vector2f& pos);
 	void GameOver();
+
 	int RandomNumberGenerator(int min, int max);
 
 	sf::Clock shootClock;
 	sf::Time lastFired;
 
 	std::vector<Bullet*> bullets;
+	std::vector<Bullet*> player2Bullets;
 	std::vector<Asteroid*> asteroids;
 
 

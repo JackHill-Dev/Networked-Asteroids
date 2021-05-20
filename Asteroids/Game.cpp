@@ -14,6 +14,7 @@ Game::Game()
 	SetTextProperties(mPlayer2LivesTxt, { 1120,20 });
 
 	bullets.reserve(100);
+	player2Bullets.reserve(100);
 	asteroids.reserve(50);
 
 	// Fill bullets pool
@@ -21,6 +22,18 @@ Game::Game()
 	{
 		bullets.push_back(new Bullet());
 	}
+
+	
+	for (int i = 0; i < 100; ++i)
+	{
+		player2Bullets.push_back(new Bullet());
+	}
+
+	for (auto& b : player2Bullets)
+	{
+		b->spr.setColor(sf::Color::Yellow);
+	}
+
 
 	for (int i = 0; i < 10; ++i)
 	{
@@ -42,6 +55,13 @@ Game::~Game()
 	
 	}
 
+	for (auto b : player2Bullets)
+	{
+		delete b;
+		b = nullptr;
+
+	}
+
 	for (auto a : asteroids)
 	{
 		delete a;
@@ -58,7 +78,7 @@ void Game::Update(const float& deltaTime)
 
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
 	{
-		Shoot(deltaTime);
+		Shoot(deltaTime, mPlayer, bullets);
 	}
 
 	for (auto& b : bullets)
@@ -66,6 +86,13 @@ void Game::Update(const float& deltaTime)
 		b->spr.move(b->velocity);
 		
 		DisableBullet(b); // Checks if bullets are out of range and put
+	}
+
+	for (auto& b : player2Bullets)
+	{
+		b->spr.move(b->velocity);
+
+		DisableBullet(b); // Checks if bullets are out of range and put it back into pool in a static state
 	}
 
 	for (auto& a : asteroids)
@@ -89,8 +116,16 @@ void Game::Update(const float& deltaTime)
 
 void Game::Draw(sf::RenderWindow& wnd)
 {
+	wnd.draw(mPlayer.GetSprite());
+
+	wnd.draw(mPlayer2.GetSprite());
 
 	for (auto& b : bullets)
+	{
+		wnd.draw(b->spr);
+	}
+
+	for (auto& b : player2Bullets)
 	{
 		wnd.draw(b->spr);
 	}
@@ -99,11 +134,6 @@ void Game::Draw(sf::RenderWindow& wnd)
 	{
 		wnd.draw(a->spr);
 	}
-
-
-	wnd.draw(mPlayer.GetSprite());
-
-	wnd.draw(mPlayer2.GetSprite());
 
 	mPlayer1Txt.setString("P1: " + std::to_string( mPlayer.score));
 	mPlayer1LivesTxt.setString("Lives: " + std::to_string( mPlayer.lives));
@@ -117,9 +147,13 @@ void Game::Draw(sf::RenderWindow& wnd)
 	wnd.draw(mPlayer2LivesTxt);
 }
 
-void Game::UpdateGameData( std::string& gData)
+void Game::UpdateGameData(float& dt, std::string& gData)
 {
 	mPlayer2.DesrializeData(gData);
+
+	if (gData == "Fire")
+		Shoot(dt, mPlayer2, player2Bullets);
+
 }
 
 std::string Game::SendGameData()
@@ -127,14 +161,14 @@ std::string Game::SendGameData()
 	return mPlayer.SerializeData();
 }
 
-void Game::Shoot(const float& dt)
+void Game::Shoot(const float& dt, Player& originPlayer, std::vector<Bullet*>& asteroidPool)
 {
 	sf::Time now = shootClock.getElapsedTime();
-	if ((now - lastFired) >= mPlayer.GetShootDelay())
+	if ((now - lastFired) >= originPlayer.GetShootDelay())
 	{
 		lastFired = now;
-		auto bullet = std::find_if(bullets.begin(), bullets.end(), [](Bullet* b) {return b->bInPool; });
-		FireBullet(*bullet, dt);
+		auto bullet = std::find_if(asteroidPool.begin(), asteroidPool.end(), [](Bullet* b) {return b->bInPool; });
+		FireBullet(originPlayer, *bullet, dt);
 
 	}
 
@@ -165,12 +199,12 @@ void Game::DisableBullet(Bullet* bullet)
 
 }
 
-void Game::FireBullet(Bullet* bullet, const float& deltatime)
+void Game::FireBullet(Player& originPlayer, Bullet* bullet, const float& deltatime)
 {
 
 	bullet->spr.setOrigin(4, 4);
-	bullet->spr.setPosition(mPlayer.GetSprite().getPosition().x, mPlayer.GetSprite().getPosition().y);
-	bullet->spr.setRotation(mPlayer.GetSprite().getRotation());
+	bullet->spr.setPosition(originPlayer.GetSprite().getPosition().x, originPlayer.GetSprite().getPosition().y);
+	bullet->spr.setRotation(originPlayer.GetSprite().getRotation());
 
 	bullet->velocity.x = sin(ToRadians(bullet->spr.getRotation())) * 450.f * deltatime;
 	bullet->velocity.y = -cos(ToRadians(bullet->spr.getRotation())) * 450.f * deltatime;
