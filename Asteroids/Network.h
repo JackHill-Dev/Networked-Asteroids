@@ -29,16 +29,25 @@ private:
 
 	SOCKADDR_IN clientAddr;
 	int clientAddrSize = sizeof(clientAddr);
+	int ID;
 };
 
-class ClientNetWork : public Network
+class ClientNetwork
 {
 public:
-	virtual void Recieve() override;
+	ClientNetwork();
+	void Recieve();
+
+	std::mutex rcvMutex;
 private:
 	WSADATA WsaDat;
 	SOCKET sock;
 	SOCKADDR_IN serveraadr;
+	std::queue<std::string> rcvQueue_Client;
 	int serverAddrSize = sizeof(serveraadr);
+
+	std::thread rcv_Client;
+	int ID;
+	
 };
 
