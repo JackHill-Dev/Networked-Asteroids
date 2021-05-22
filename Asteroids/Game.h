@@ -48,6 +48,8 @@ public:
 	
 };
 
+typedef int PlayerID;
+
 class Game
 {
 public:
@@ -80,6 +82,9 @@ private:
 	std::vector<Bullet*> bullets;
 	std::vector<Bullet*> player2Bullets;
 	std::vector<Asteroid*> asteroids;
+
+	std::map<PlayerID, Player> players;
+	ClientNetwork* server;
 
 
 	Player mPlayer2;

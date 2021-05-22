@@ -16,8 +16,10 @@ public:
 	virtual void Recieve();
 	void CloseSockets();
 
+	bool AllClientsConnected();
+
 	std::mutex rcvMutex;
-	
+	std::queue<std::string> rcvQueue;
 	
 private:
 	WSADATA WsaDat;
@@ -25,11 +27,13 @@ private:
 	SOCKADDR_IN server;
 
 	std::thread rcv;
-	std::queue<std::string> rcvQueue;
+	
 
 	SOCKADDR_IN clientAddr;
 	int clientAddrSize = sizeof(clientAddr);
-	int ID;
+	int ID = 1;
+
+	int maxPlayers = 2;
 };
 
 class ClientNetwork
@@ -37,17 +41,21 @@ class ClientNetwork
 public:
 	ClientNetwork();
 	void Recieve();
+	void Send(const char* msg);
 
-	std::mutex rcvMutex;
+	std::mutex rcvMutex_Client;
+	std::queue<std::string> rcvQueue_Client;
 private:
 	WSADATA WsaDat;
 	SOCKET sock;
 	SOCKADDR_IN serveraadr;
-	std::queue<std::string> rcvQueue_Client;
+
 	int serverAddrSize = sizeof(serveraadr);
 
 	std::thread rcv_Client;
 	int ID;
+
+	
 	
 };
 
