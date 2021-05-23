@@ -1,5 +1,3 @@
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-
 #include <SFML/Graphics.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Graphics/Font.hpp>
@@ -11,7 +9,6 @@
 #include <iostream>
 #include <queue>
 #include <stdio.h>
-#include <process.h>
 #include <string>
 #include <thread>
 #include <mutex>
@@ -70,70 +67,32 @@ void RunHostClient()
 		std::string command = " ";
 
 		// Recieve data from clients
-		serverNetwork.rcvMutex.lock();
 		if (serverNetwork.rcvQueue.size() > 0)
 		{
+			serverNetwork.rcvMutex.lock();
+		
 			mGame.UpdateGameData(deltatime, serverNetwork.rcvQueue.front());
 			serverNetwork.rcvQueue.pop();
+
+			serverNetwork.rcvMutex.unlock();
 		}
-		serverNetwork.rcvMutex.unlock();
+	
 
 	
 		while (window.pollEvent(event))
 		{
 			if (event.type == sf::Event::Closed)
 				window.close();
-
-			switch (event.type)
-			{
-			case sf::Event::KeyPressed:
-				keyPressed = true;
-				break;
-			case sf::Event::KeyReleased:
-				keyPressed = false;
-				break;
-			}
 		}
 		
 		if (gameStart)
 		{
-
 			mGame.Update(deltatime);
 
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) && keyPressed)
-			{
-
-				mGame.mPlayer.move = Forward;
-				command = "Forward";
-
-			}
-			
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) && keyPressed)
-			{
-				mGame.mPlayer.rotate = Left;
-				command = "Left";
-			}
-			else
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) && keyPressed)
-			{
-				mGame.mPlayer.rotate = Right;
-				command = "Right";
-			}
-			/*else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::D) && !sf::Keyboard::isKeyPressed(sf::Keyboard::A) && !keyPressed);
-			{
-				mGame.mPlayer.rotate = Still;
-				command = "Still";
-			}*/
-			
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
-			{
-				command = "Fire";
-			}
-		
 			window.clear(sf::Color::Black);
 			mGame.Draw(window);
 
-			serverNetwork.Send(command.c_str());
+			serverNetwork.Send( mGame.SendGameData().c_str());
 
 		}
 		else
@@ -165,10 +124,11 @@ void RunNormalClient()
 	std::string test = "Connection request";
 	clientNetwork.Send(test.c_str());
 
-
 	sf::RenderWindow window(sf::VideoMode(1280, 720), "Asteroids client");
 
 	std::string command = "";
+	bool gameStart = false;
+
 	while (bRunning)
 	{
 		bRunning = window.isOpen();
@@ -176,6 +136,20 @@ void RunNormalClient()
 		sf::Event event;
 
 		deltatime = clock.restart().asSeconds();
+
+
+		if (clientNetwork.rcvQueue_Client.size() > 0)
+		{
+			clientNetwork.rcvMutex_Client.lock();
+			
+			mGame.UpdateGameData(deltatime, clientNetwork.rcvQueue_Client.front());
+			clientNetwork.rcvQueue_Client.pop();
+
+			clientNetwork.rcvMutex_Client.unlock();
+		}
+
+		if (clientNetwork.GetID() == 2 && !gameStart)
+			gameStart = true;
 
 		while (window.pollEvent(event))
 		{
@@ -187,61 +161,29 @@ void RunNormalClient()
 
 		}
 
-		clientNetwork.rcvMutex_Client.lock();
-		if (clientNetwork.rcvQueue_Client.size() > 0)
+		if (gameStart)
 		{
-			mGame.UpdateGameData(deltatime, clientNetwork.rcvQueue_Client.front());
-		}
-		clientNetwork.rcvMutex_Client.unlock();
+			mGame.Update(deltatime);
+
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+				command = "Fire";
 
 
+			window.clear(sf::Color::Black);
+			mGame.Draw(window);
 
-		mGame.Update(deltatime);
-
-
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-		{
-
-			mGame.mPlayer.move = Forward;
-			command = "Forward";
+			clientNetwork.Send(mGame.SendGameData().c_str());
 
 		}
-		/*else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-		{
-			mGame.mPlayer.move = Hold;
-			command = "Hold";
-		}*/
 		else
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-			{
-				mGame.mPlayer.rotate = Left;
-				command = "Left";
-			}
-			else
-				if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-				{
-					mGame.mPlayer.rotate = Right;
-					command = "Right";
-				}
-		/*else if (!sf::Keyboard::isKeyPressed(sf::Keyboard::D) || !sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-		{
-			mGame.mPlayer.rotate = Still;
-			command = "Still";
-		}*/
-
-		//if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
-		//	send(connectSocket, buffer, bufferSize, 0);
-			//command = "Fire";
-
-
-		window.clear(sf::Color::Black);
-		mGame.Draw(window);
-
-
+			window.clear(sf::Color::Red);
+		
 		window.display();
 
 
-		clientNetwork.Send(command.c_str());
+		
+
+
 	}
 	
 }

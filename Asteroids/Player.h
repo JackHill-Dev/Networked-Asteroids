@@ -40,8 +40,7 @@ public:
 	Move move = Hold;
 	Rotate rotate = Still;
 	void SetSpriteColor(const sf::Color& col) { spr.setColor(col); }
-
-private:
+	float& FindNextValue(std::string& str);
 	void Move(const float& deltaTime);
 
 	sf::Sprite spr;

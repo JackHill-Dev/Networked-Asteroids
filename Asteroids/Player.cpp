@@ -30,9 +30,11 @@ void Player::AddScore(const int& s)
 	score += s;
 }
 
+
+
 void Player::Move(const float& deltaTime) //,sf::Keyboard::key& kwy)
 {
-	/*if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
 	{
 		spr.rotate(-rotationSpeed * deltaTime);
 		
@@ -40,114 +42,81 @@ void Player::Move(const float& deltaTime) //,sf::Keyboard::key& kwy)
 	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
 	{
 		spr.rotate(rotationSpeed * deltaTime);
-	}*/
-	switch (rotate)
-	{
-	case Still:
-		break;
-	case Left:
-		spr.rotate(-rotationSpeed * deltaTime);
-		break;
-	case Right:
-		spr.rotate(rotationSpeed * deltaTime);
-		break;
-	default:
-		break;
 	}
 
 
-	if (move == Forward)
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
 	{
-
 		velocity.x += sin(ToRadians(spr.getRotation())) * thrustSpeed * deltaTime;
 		velocity.y += -cos(ToRadians(spr.getRotation())) * thrustSpeed * deltaTime;
 
 	}
-	else
+
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
 	{
-		if (velocity.x > 0 || velocity.y > 0)
-		{
-			velocity.x *= 0.9 * deltaTime;
-			velocity.y *= 0.9 * deltaTime;
-		}
-		
+		velocity.x = 0;
+		velocity.y = 0;
 	}
-
-
+	
 
 }
 
 std::string Player::SerializeData()
 {
-	double tempVelX = velocity.x;
-	double tempVelY = velocity.y;
 
-	std::string playerData = "Velocity/" + std::to_string(tempVelX) + "," + std::to_string(tempVelY) + "/";
-								//"Rotation/" + std::to_string( spr.getRotation()) + "/";*/
-	
+	float tempX = spr.getPosition().x;
+	float tempY = spr.getPosition().y;
+
+	std::string playerData = "Pos/" + std::to_string(tempX) + "/" + std::to_string(tempY) + "/" + std::to_string(spr.getRotation()) + "/\0";
+
 	return playerData;
+}
+
+float& Player::FindNextValue(std::string& str)
+{
+	std::string temp;
+	int pos = 0;
+	float val = 0;
+
+	if(str.front() == '/')
+		str.erase(str.begin());
+
+	while (str[pos] != '.')
+	{
+		temp += str[pos++];
+	}
+
+	temp += str.substr(pos, pos + 7);
+
+	val = std::stof(temp);
+
+	str.erase(str.begin(), str.begin() + pos + 7);
+
+	return val;
 }
 
 void Player::DesrializeData(std::string& data)
 {
-	if (data == "Forward")
+	float x, y, r;
+
+	size_t pos = 0;
+	std::string result;
+	if (strstr(data.c_str(), "Pos"))
 	{
-		move = Forward;
+		pos = data.find_first_of('/');
+		pos++;
+		data.erase(data.begin(), data.begin() + pos);
+
+		x = FindNextValue(data);
+		y = FindNextValue(data);
+		r = FindNextValue(data);
+
+		spr.setPosition(x, y);
+		spr.setRotation(r);
 	}
-	else if(data == "Hold")
-	{
-		move = Hold;
-	}
 
-
-	if (data == "Left")
-	{
-		rotate = Left;
-	}
-	else if (data == "Right")
-	{
-		rotate = Right;
-	}
-	else if(data == "Still")
-	{
-		rotate = Still;
-	}
-	//double velX, velY;
-	//int rot;
-	//size_t pos = 0;
-
-	//data.find("/", pos);
-	////++pos;
-
-	//std::string result = "";
-	//while (data[pos] != '/')
-	//{
-	//	result += data[pos++];
-	//}
-	//// TODO: improve this algoritm as there will be a lot more data to handle
-	//if (result == "Velocity")
-	//{
-	//	++pos;
-	//	result = data[pos];
-	//	
-	//	std::string value = "";
-	//	while (data[pos] != ',')
-	//		value += data[pos++];
-
-	//	velX = std::stof(value);
-
-	//	++pos;
-
-	//	value = "";
-	//	while (data[pos] != '/')
-	//		value += data[pos++];
-
-	//	
-	//	velY = std::stof(value);
-	//}
-
-	//velocity.x = velX;
-	//velocity.y = velY;
+	
+	
 }
 
 const sf::FloatRect& Player::GetBounds() const

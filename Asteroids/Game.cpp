@@ -151,7 +151,6 @@ void Game::UpdateGameData(float& dt, std::string& gData)
 {
 	// int id = 1;
 	// players[id].DesrializeData(gData);
-	
 
 	mPlayer2.DesrializeData(gData);
 

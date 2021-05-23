@@ -26,6 +26,7 @@ Network::Network()
 		WSACleanup();
 	}
 
+
 	rcv = std::thread(&Network::Recieve, this);
 	
 }
@@ -56,8 +57,8 @@ void Network::Recieve()
 			{
 				std::cout << "A client has connected" << std::endl;
 				
-				// On connection request send the client/player their assinged ID
-				std::string connMsg = "ID:" + std::to_string(ID++);
+				// On connection request, send the client/player their assinged ID
+				std::string connMsg = "ID:" + std::to_string(++ID);
 				strcpy_s(buffer, connMsg.c_str());
 				int bytes = sendto(sock, buffer, bufferlen, 0, (SOCKADDR*)&clientAddr, clientAddrSize);
 				if (bytes == SOCKET_ERROR)
@@ -71,7 +72,10 @@ void Network::Recieve()
 				std::cout << "A client disconnected";
 			}
 
+
+
 			rcvMutex.lock();
+			rcvQueue = std::queue<std::string>();
 			rcvQueue.push(data);
 			rcvMutex.unlock();
 		}
@@ -109,7 +113,7 @@ void Network::Send(const char* msg)
 
 ClientNetwork::ClientNetwork()
 {
-	const char* serverIP = "127.0.0.1";
+	const char* serverIP = "192.168.0.26";
 
 	if (WSAStartup(MAKEWORD(2, 2), &WsaDat) != 0)
 	{
@@ -155,8 +159,6 @@ void ClientNetwork::Recieve()
 
 			if (!data.empty() || data != " ")
 			{
-				std::cout << "Data recieved: " << data << std::endl;
-
 
 				if (strstr(data.c_str(), "ID"))
 				{
@@ -165,6 +167,7 @@ void ClientNetwork::Recieve()
 					pos = data.find_first_of(':');
 					data = data[++pos];
 					ID = std::stoi(data);
+					std::cout << std::to_string(ID) << std::endl;
 				}
 
 				rcvMutex_Client.lock();

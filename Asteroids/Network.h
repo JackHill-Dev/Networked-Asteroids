@@ -6,6 +6,7 @@
 #include <string>
 #include <iostream>
 
+
 #pragma comment(lib, "ws2_32.lib")	// Use this library whilst linking - contains the Winsock2 implementation.
 
 class Network
@@ -34,6 +35,7 @@ private:
 	int ID = 1;
 
 	int maxPlayers = 2;
+
 };
 
 class ClientNetwork
@@ -42,7 +44,7 @@ public:
 	ClientNetwork();
 	void Recieve();
 	void Send(const char* msg);
-
+	int& GetID() { return ID; }
 	std::mutex rcvMutex_Client;
 	std::queue<std::string> rcvQueue_Client;
 private:
@@ -54,6 +56,8 @@ private:
 
 	std::thread rcv_Client;
 	int ID = -1;
+
+
 
 	
 	
