@@ -48,7 +48,7 @@ private:
 	sf::Texture texture;
 	sf::Vector2f velocity = {0,0};
 	sf::Time fireDelay = sf::seconds(0.25);
-	int id = 0;
+	int id = -1;
 	float thrustSpeed = 0.1f;
 	float rotationSpeed = 100.f;
 };

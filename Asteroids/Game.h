@@ -84,7 +84,7 @@ private:
 	std::vector<Asteroid*> asteroids;
 
 	std::map<PlayerID, Player> players;
-	ClientNetwork* server;
+	//ClientNetwork* server;
 
 
 	Player mPlayer2;

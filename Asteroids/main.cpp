@@ -133,6 +133,8 @@ void RunHostClient()
 			window.clear(sf::Color::Black);
 			mGame.Draw(window);
 
+			serverNetwork.Send(command.c_str());
+
 		}
 		else
 		{
@@ -142,6 +144,8 @@ void RunHostClient()
 		
 		window.display();
 
+
+		
 	}
 
 }
@@ -237,7 +241,7 @@ void RunNormalClient()
 		window.display();
 
 
-		
+		clientNetwork.Send(command.c_str());
 	}
 	
 }

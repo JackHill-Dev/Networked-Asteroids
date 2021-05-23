@@ -12,7 +12,7 @@ class Network
 {
 public:
 	Network();
-	void Send(SOCKET* sock, char* msg, int msgSize);
+	void Send(const char* msg);
 	virtual void Recieve();
 	void CloseSockets();
 
@@ -48,12 +48,12 @@ public:
 private:
 	WSADATA WsaDat;
 	SOCKET sock;
-	SOCKADDR_IN serveraadr;
 
+	SOCKADDR_IN serveraadr;
 	int serverAddrSize = sizeof(serveraadr);
 
 	std::thread rcv_Client;
-	int ID;
+	int ID = -1;
 
 	
 	

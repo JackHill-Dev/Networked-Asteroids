@@ -55,7 +55,8 @@ void Network::Recieve()
 			if (data == "Connection request")
 			{
 				std::cout << "A client has connected" << std::endl;
-				//std::string ID = std::to_string(ID++);
+				
+				// On connection request send the client/player their assinged ID
 				std::string connMsg = "ID:" + std::to_string(ID++);
 				strcpy_s(buffer, connMsg.c_str());
 				int bytes = sendto(sock, buffer, bufferlen, 0, (SOCKADDR*)&clientAddr, clientAddrSize);
@@ -90,6 +91,20 @@ void Network::CloseSockets()
 bool Network::AllClientsConnected()
 {
 	return ID == maxPlayers;
+}
+
+void Network::Send(const char* msg)
+{
+	const int bufferSize = 1024;
+	char buffer[bufferSize];
+
+	strcpy_s(buffer, msg);
+
+	int result = sendto(sock, buffer, bufferSize, 0, (SOCKADDR*)&clientAddr, clientAddrSize);
+	if (result == SOCKET_ERROR)
+	{
+		std::cout << "sendto failed with error: " << WSAGetLastError() << std::endl;
+	}
 }
 
 ClientNetwork::ClientNetwork()
@@ -141,16 +156,21 @@ void ClientNetwork::Recieve()
 			if (!data.empty() || data != " ")
 			{
 				std::cout << "Data recieved: " << data << std::endl;
-			}
 
-			if (strstr(data.c_str(), "ID"))
-			{
-				std::cout << "Sucessful connection, " << data << std::endl;
-			}
 
-			rcvMutex_Client.lock();
-			rcvQueue_Client.push(data);
-			rcvMutex_Client.unlock();
+				if (strstr(data.c_str(), "ID"))
+				{
+					std::cout << "Sucessful connection, " << data << std::endl;
+					size_t pos = 0;
+					pos = data.find_first_of(':');
+					data = data[++pos];
+					ID = std::stoi(data);
+				}
+
+				rcvMutex_Client.lock();
+				rcvQueue_Client.push(data);
+				rcvMutex_Client.unlock();
+			}
 		}
 
 

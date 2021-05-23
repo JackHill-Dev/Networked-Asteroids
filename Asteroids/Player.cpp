@@ -21,6 +21,8 @@ void Player::Update(const float& deltaTime)
 void Player::Update(const float& deltaTime, sf::Vector2f& vel)
 {
 	spr.move(vel);
+	
+	
 }
 
 void Player::AddScore(const int& s)
@@ -82,7 +84,7 @@ std::string Player::SerializeData()
 
 	std::string playerData = "Velocity/" + std::to_string(tempVelX) + "," + std::to_string(tempVelY) + "/";
 								//"Rotation/" + std::to_string( spr.getRotation()) + "/";*/
-
+	
 	return playerData;
 }
 
