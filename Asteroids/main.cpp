@@ -36,7 +36,7 @@ void RunHostClient()
 
 	sf::RenderWindow window(sf::VideoMode(1280, 720), "Asteroids host");
 
-	Game mGame;
+	Game mGame(true);
 	Network serverNetwork;
 	
 	sf::Font fnt;
@@ -92,8 +92,8 @@ void RunHostClient()
 			window.clear(sf::Color::Black);
 			mGame.Draw(window);
 
-			serverNetwork.Send( mGame.SendGameData().c_str());
-
+			serverNetwork.Send(mGame.SendGameData().c_str());
+			serverNetwork.Send(mGame.SendAsteroidData().c_str());
 		}
 		else
 		{
@@ -113,7 +113,7 @@ void RunHostClient()
 void RunNormalClient()
 {
 
-	Game mGame;
+	Game mGame(false);
 	ClientNetwork clientNetwork;
 
 	sf::Clock clock;
@@ -128,6 +128,10 @@ void RunNormalClient()
 
 	std::string command = "";
 	bool gameStart = false;
+
+	std::string testData = "Asteroids[0/0/420.690000/690.420000/45.000000/,1/0/690.000000/420.000000/60.000000]";
+
+	
 
 	while (bRunning)
 	{
@@ -173,6 +177,7 @@ void RunNormalClient()
 			mGame.Draw(window);
 
 			clientNetwork.Send(mGame.SendGameData().c_str());
+	
 
 		}
 		else

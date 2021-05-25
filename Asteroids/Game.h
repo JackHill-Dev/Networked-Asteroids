@@ -40,10 +40,9 @@ public:
 		spr.setOrigin(32, 32);
 		velocity = startVel;
 	}
-
-	int health = 5;
+	bool isDestroyed = false;
 	sf::Vector2f velocity = {0.1,0.1};
-	sf::Sprite spr;
+	sf::Sprite spr;	
 	sf::Texture texture;
 	
 };
@@ -53,12 +52,18 @@ typedef int PlayerID;
 class Game
 {
 public:
-	Game();
+	Game(const bool& host);
 	~Game();
 	void Update(const float& deltaTime);
 	void Draw(sf::RenderWindow& wnd);
+
 	void UpdateGameData(float& dt, std::string& gData);
+	void DeserialiseAsteroidData(std::string& astData);
+
 	std::string SendGameData();
+	std::string SendAsteroidData();
+	std::string SendPlayerInfoData();
+
 	float ToRadians(float x)
 	{
 		return	x * (3.14 / 180);
@@ -75,6 +80,8 @@ private:
 	void GameOver();
 
 	int RandomNumberGenerator(int min, int max);
+	std::string BoolToString(bool& b);
+	float FindNextValue(std::string& str, int charAmount, char seperator);
 
 	sf::Clock shootClock;
 	sf::Time lastFired;
@@ -99,5 +106,6 @@ private:
 
 	int width,height;
 	bool bGameover = false;
+	bool isHost = false;
 };
 
