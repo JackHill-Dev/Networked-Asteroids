@@ -1,5 +1,18 @@
 #include "Network.h"
 
+enum  Client_Message : unsigned char
+{
+	Join,
+	Leave,
+	Input
+};
+
+enum Server_Message : unsigned char
+{
+	Join_Result,
+	State
+};
+
 Network::Network()
 {
 	if (WSAStartup(MAKEWORD(2, 2), &WsaDat) != 0)
@@ -34,7 +47,7 @@ Network::Network()
 void Network::Recieve()
 {
 	int iResult;
-	const int bufferlen = 2048;
+	const int bufferlen = 1024;
 	char buffer[bufferlen];
 
 	bool finished = false;
@@ -50,35 +63,49 @@ void Network::Recieve()
 		}
 		else
 		{
-			std::string data;
-			data = buffer;
+			//std::string data;
+			//data = buffer;
 
-			if (data == "Connection request")
+			switch (buffer[0])
 			{
-				std::cout << "A client has connected" << std::endl;
-				
-				// On connection request, send the client/player their assinged ID
-				std::string connMsg = "ID:" + std::to_string(++ID);
-				strcpy_s(buffer, connMsg.c_str());
-				int bytes = sendto(sock, buffer, bufferlen, 0, (SOCKADDR*)&clientAddr, clientAddrSize);
-				if (bytes == SOCKET_ERROR)
-				{
-					std::cout << "sendto failed with error: " << WSAGetLastError() << std::endl;
-				}
+			case Client_Message::Join:
+			{
+				buffer[0] = Server_Message::Join_Result;
+				buffer[1] = ++ID;
+				printf("New client connected with ID: %i", ID);
+
+				iResult = sendto(sock, buffer, bufferlen, 0, (SOCKADDR*)&clientAddr, clientAddrSize);
+			}
+			break;
+			default: break;
 			}
 
-			if (data == "Disconnect")
-			{
-				finished = true;
-				std::cout << "A client disconnected";
+			//if (data == "Connection request")
+			//{
+			//	std::cout << "A client has connected" << std::endl;
+			//	
+			//	// On connection request, send the client/player their assinged ID
+			//	std::string connMsg = "ID:" + std::to_string(++ID);
+			//	strcpy_s(buffer, connMsg.c_str());
+			//	int bytes = sendto(sock, buffer, bufferlen, 0, (SOCKADDR*)&clientAddr, clientAddrSize);
+			//	if (bytes == SOCKET_ERROR)
+			//	{
+			//		std::cout << "sendto failed with error: " << WSAGetLastError() << std::endl;
+			//	}
+			//}
 
-			}
+			//if (data == "Disconnect")
+			//{
+			//	finished = true;
+			//	std::cout << "A client disconnected";
+
+			//}
 
 
 
 			rcvMutex.lock();
 			rcvQueue = std::queue<std::string>();
-			rcvQueue.push(data);
+			//rcvQueue.push(data);
 			rcvMutex.unlock();
 		}
 	
@@ -190,7 +217,7 @@ void ClientNetwork::Send(const char* msg)
 	char buffer[bufferSize];
 
 	strcpy_s(buffer, msg);
-
+	
 	int result = sendto(sock, buffer, bufferSize, 0, (SOCKADDR*)&serveraadr, serverAddrSize);
 	if (result == SOCKET_ERROR)
 	{

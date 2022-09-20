@@ -68,9 +68,14 @@ std::string Player::SerializeData()
 	float tempY = spr.getPosition().y;
 
 	std::string playerData = "Pos/" + std::to_string(tempX) + "/" + std::to_string(tempY) + "/" + std::to_string(spr.getRotation()) + "/\0";
+	// Player position packet
+	// [ID/X/Y/R]
+	// int/float/float/float
 
 	return playerData;
 }
+
+
 
 float& Player::FindNextValue(std::string& str)
 {

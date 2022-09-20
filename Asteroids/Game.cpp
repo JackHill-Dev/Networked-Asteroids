@@ -311,7 +311,6 @@ float Game::FindNextValue(std::string& str, int charAmount, char seperator)
 
 std::string Game::SendGameData()
 {
-
 	std::string posPacket = isHost ? mPlayer.SerializeData() + SendAsteroidData() + SendPlayerInfoData() : mPlayer.SerializeData() + SendPlayerInfoData();
 
 	return posPacket;
@@ -440,6 +439,53 @@ bool Game::GameOver()
 	}
 
 	return false;
+}
+
+void Game::CreatePlayerPosPacket()
+{
+	
+		const int bufferSize = 1024;
+		uint8_t buffer[bufferSize];
+		uint32_t bytesWritten = 0;
+		float x = mPlayer.GetSprite().getPosition().x;
+		float y = mPlayer.GetSprite().getPosition().y;
+		
+		memcpy(&buffer[bytesWritten], &x, sizeof(float));
+		bytesWritten += sizeof(float);
+
+		memcpy(&buffer[bytesWritten], &y, sizeof(float));
+		bytesWritten += sizeof(float);
+
+		int readIndex = 0;
+		float bufferX = 0, bufferY = 0;
+		memcpy(&bufferX, &buffer[readIndex], sizeof(float));
+		readIndex += sizeof(float);
+		memcpy(&bufferY, &buffer[readIndex], sizeof(float));
+		readIndex += sizeof(float);
+		
+}
+
+void Game::CreateAsteroidPacket()
+{
+	const int bufferSize = 1024;
+	uint8_t buffer[bufferSize];
+	uint32_t bytesWritten = 0;
+
+	for (int i = 0; i < asteroids.size(); ++i)
+	{
+		// store temp reference to asteroid element
+		Asteroid& ast = *asteroids[i];
+
+		memcpy(&buffer[bytesWritten], &ast.isDestroyed, sizeof(bool));
+		bytesWritten += sizeof(bool);
+
+		memcpy(&buffer[bytesWritten], &ast.spr.getPosition(), sizeof(&ast.spr.getPosition()));
+		bytesWritten += sizeof(ast.spr.getPosition());
+
+		memcpy(&buffer[bytesWritten], &ast.velocity, sizeof(ast.velocity));
+		bytesWritten += sizeof(ast.velocity);
+	}
+
 }
 
 int Game::RandomNumberGenerator(int min, int max)

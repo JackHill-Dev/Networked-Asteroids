@@ -25,16 +25,22 @@ public:
 	void AssignID(const int& i) { id = i; };
 	sf::Time& GetShootDelay() { return fireDelay; }
 	std::string SerializeData();
+
+	
+
 	void DesrializeData(std::string& data);
 	const sf::FloatRect& GetBounds() const;
 	 sf::Sprite& GetSprite();
 	 sf::Vector2f& GetVelocity() { return velocity; }
+
+	 float ToRadians(float x)
+	 {
+		 return	x * (3.14 / 180);
+	 }
+
 	 int score = 0;
 	 int lives = 3;
-	float ToRadians(float x)
-	{
-		return	x * (3.14 / 180);
-	}
+	
 	bool bHasCollided = false;
 
 	Move move = Hold;

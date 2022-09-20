@@ -48,6 +48,7 @@ void RunHostClient()
 	bool bRunning = true;
 	bool gameStart = false;
 
+	mGame.CreateAsteroidPacket();
 	SetupConnectingScreen(fnt, conTxt);
 	bool keyPressed = false;
 	while (bRunning)
