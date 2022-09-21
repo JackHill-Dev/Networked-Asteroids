@@ -67,10 +67,10 @@ void Network::Recieve()
 			case Client_Message::Leave:
 			{
 				// Reduce amount of clients/players by 1
-				--ID;
+				ID--;
 				// End this clients thread on the server
-				finished = true;
-				printf("Client disconnected!");
+				printf("Client disconnected! Current players left: %i", ID);
+				
 			}
 			break;
 			case Client_Message::Input:
@@ -228,6 +228,20 @@ void ClientNetwork::SendConnectionRequest()
 	char buffer[bufferSize];
 
 	buffer[0] = Client_Message::Join;
+
+	int result = sendto(sock, buffer, bufferSize, 0, (SOCKADDR*)&serveraadr, serverAddrSize);
+	if (result == SOCKET_ERROR)
+	{
+		std::cout << "sendto failed with error: " << WSAGetLastError() << std::endl;
+	}
+}
+
+void ClientNetwork::Disconnect()
+{
+	const int bufferSize = 1024;
+	char buffer[bufferSize];
+
+	buffer[0] = Client_Message::Leave;
 
 	int result = sendto(sock, buffer, bufferSize, 0, (SOCKADDR*)&serveraadr, serverAddrSize);
 	if (result == SOCKET_ERROR)

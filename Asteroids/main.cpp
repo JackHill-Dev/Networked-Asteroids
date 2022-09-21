@@ -83,7 +83,11 @@ void RunHostClient()
 		while (window.pollEvent(event))
 		{
 			if (event.type == sf::Event::Closed)
+			{
+				// Disconnect from server
+				// serverNetwork.Disconnect();
 				window.close();
+			}
 
 			
 		}
@@ -169,7 +173,7 @@ void RunNormalClient(std::string& ip)
 		{
 			if (event.type == sf::Event::Closed)
 			{
-				clientNetwork.Send("Disconnect");
+				clientNetwork.Disconnect();
 				window.close();
 
 			

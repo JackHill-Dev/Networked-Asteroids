@@ -47,6 +47,7 @@ public:
 	void Recieve();
 	void Send(const char* msg);
 	void SendConnectionRequest();
+	void Disconnect();
 	int& GetID() { return ID; }
 	std::mutex rcvMutex_Client;
 	std::queue<char*> rcvQueue_Client;
