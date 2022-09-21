@@ -75,8 +75,6 @@ void Network::Recieve()
 			break;
 			case Client_Message::Input:
 			{
-				// Send back the player/clients game info
-				// this includes both player and asteroid data
 				rcvMutex.lock();
 				rcvQueue = std::queue<char*>();
 				rcvQueue.push(buffer);
@@ -243,6 +241,27 @@ void ClientNetwork::Send(const char* msg)
 	{
 		std::cout << "sendto failed with error: " << WSAGetLastError() << std::endl;
 	}
+}
+
+void ClientNetwork::SendPlayerData(const float& x, const float& y, const float& r)
+{
+	const int bufferSize = 1024;
+	char buffer[bufferSize];
+	uint32_t bytesWritten = 0;
+
+	buffer[0] = Client_Message::Input;
+	bytesWritten = 1;
+
+	memcpy(&buffer[bytesWritten], &x, sizeof(float));
+	bytesWritten += sizeof(float);
+
+	memcpy(&buffer[bytesWritten], &y, sizeof(float));
+	bytesWritten += sizeof(float);
+
+	memcpy(&buffer[bytesWritten], &r, sizeof(float));
+	bytesWritten += sizeof(float);
+
+	sendto(sock, buffer, bufferSize, 0, (SOCKADDR*)&serveraadr, serverAddrSize);
 }
 
 void ClientNetwork::SendConnectionRequest()

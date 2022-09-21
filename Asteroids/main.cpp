@@ -195,7 +195,7 @@ void RunNormalClient(std::string& ip)
 			mGame.Draw(window);
 
 			//clientNetwork.Send(mGame.SendGameData().c_str());
-	
+			clientNetwork.SendPlayerData(mGame.mPlayer.spr.getPosition().x, mGame.mPlayer.spr.getPosition().y, mGame.mPlayer.spr.getRotation());
 
 		}
 		else
