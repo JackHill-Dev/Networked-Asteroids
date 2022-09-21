@@ -1,4 +1,5 @@
 #include "Game.h"
+#include "Messages.h"
 #include <SFML/Window/Keyboard.hpp>
 std::mt19937 random_number_engine(time(0));
 Game::Game(const bool& host)
@@ -172,10 +173,10 @@ void Game::Draw(sf::RenderWindow& wnd)
 		wnd.draw(mPlayer2WinTxt);
 }
 
-void Game::UpdateGameData(float& dt, std::string& gData)
+void Game::UpdateGameData(float& dt,  char* buffer)
 {
 
-	mPlayer2.DesrializeData(gData);
+	/*mPlayer2.DesrializeData(gData);
 
 	if(!isHost)
 		DeserialiseAsteroidData(gData);
@@ -185,8 +186,22 @@ void Game::UpdateGameData(float& dt, std::string& gData)
 	if (gData == "Fire")
 	{
 		Shoot(dt, mPlayer2, player2Bullets);
-	}
+	}*/
 
+
+	switch (buffer[0])
+	{
+	case Client_Message::Input:
+	{
+		buffer[0] = Server_Message::State;
+		int32_t bytesWritten = 1;
+		// Send back the player/clients game info
+		// this includes both player and asteroid data
+
+	}
+	break;
+	default: break;
+	}
 
 }
 

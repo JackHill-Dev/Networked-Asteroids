@@ -1,17 +1,6 @@
 #include "Network.h"
+#include "Messages.h"
 
-enum  Client_Message : unsigned char
-{
-	Join,
-	Leave,
-	Input
-};
-
-enum Server_Message : unsigned char
-{
-	Join_Result,
-	State
-};
 
 Network::Network()
 {
@@ -63,53 +52,44 @@ void Network::Recieve()
 		}
 		else
 		{
-			//std::string data;
-			//data = buffer;
-
 			switch (buffer[0])
 			{
 			case Client_Message::Join:
 			{
 				buffer[0] = Server_Message::Join_Result;
-				buffer[1] = ++ID;
+				ID++;
+				memcpy(&buffer[1], &ID, sizeof(ID));
 				printf("New client connected with ID: %i", ID);
 
 				iResult = sendto(sock, buffer, bufferlen, 0, (SOCKADDR*)&clientAddr, clientAddrSize);
 			}
 			break;
+			case Client_Message::Leave:
+			{
+				// Reduce amount of clients/players by 1
+				--ID;
+				// End this clients thread on the server
+				finished = true;
+				printf("Client disconnected!");
+			}
+			break;
+			case Client_Message::Input:
+			{
+				buffer[0] = Server_Message::State;
+				int32_t bytesWritten = 1;
+				// Send back the player/clients game info
+				// this includes both player and asteroid data
+				rcvMutex.lock();
+				rcvQueue = std::queue<char*>();
+				rcvQueue.push(buffer);
+				rcvMutex.unlock();
+			}
+			break;
 			default: break;
 			}
 
-			//if (data == "Connection request")
-			//{
-			//	std::cout << "A client has connected" << std::endl;
-			//	
-			//	// On connection request, send the client/player their assinged ID
-			//	std::string connMsg = "ID:" + std::to_string(++ID);
-			//	strcpy_s(buffer, connMsg.c_str());
-			//	int bytes = sendto(sock, buffer, bufferlen, 0, (SOCKADDR*)&clientAddr, clientAddrSize);
-			//	if (bytes == SOCKET_ERROR)
-			//	{
-			//		std::cout << "sendto failed with error: " << WSAGetLastError() << std::endl;
-			//	}
-			//}
-
-			//if (data == "Disconnect")
-			//{
-			//	finished = true;
-			//	std::cout << "A client disconnected";
-
-			//}
-
-
-
-			rcvMutex.lock();
-			rcvQueue = std::queue<std::string>();
-			//rcvQueue.push(data);
-			rcvMutex.unlock();
 		}
-	
-		
+
 	}
 
 	rcv.join();
@@ -181,7 +161,26 @@ void ClientNetwork::Recieve()
 		{
 			std::cout << "recvfrom failed with error: " << WSAGetLastError() << std::endl;
 		}
-		else
+
+		switch (buffer[0])
+		{
+		case Server_Message::Join_Result:
+		{
+			// Get and set the allocated ID from the server
+			memcpy(&ID, &buffer[1], sizeof(ID));
+			printf("Connection to server successful! Allocated ID is: %i", ID);
+		}
+		break;
+		case Server_Message::State:
+		{
+			rcvMutex_Client.lock();
+			rcvQueue_Client.push(buffer);
+			rcvMutex_Client.unlock();
+		}
+		break;
+		}
+		
+		/*else
 		{
 			std::string data;
 			data = buffer;
@@ -199,11 +198,9 @@ void ClientNetwork::Recieve()
 					std::cout << std::to_string(ID) << std::endl;
 				}
 
-				rcvMutex_Client.lock();
-				rcvQueue_Client.push(data);
-				rcvMutex_Client.unlock();
+				
 			}
-		}
+		}*/
 
 
 	}
@@ -218,6 +215,20 @@ void ClientNetwork::Send(const char* msg)
 
 	strcpy_s(buffer, msg);
 	
+	int result = sendto(sock, buffer, bufferSize, 0, (SOCKADDR*)&serveraadr, serverAddrSize);
+	if (result == SOCKET_ERROR)
+	{
+		std::cout << "sendto failed with error: " << WSAGetLastError() << std::endl;
+	}
+}
+
+void ClientNetwork::SendConnectionRequest()
+{
+	const int bufferSize = 1024;
+	char buffer[bufferSize];
+
+	buffer[0] = Client_Message::Join;
+
 	int result = sendto(sock, buffer, bufferSize, 0, (SOCKADDR*)&serveraadr, serverAddrSize);
 	if (result == SOCKET_ERROR)
 	{

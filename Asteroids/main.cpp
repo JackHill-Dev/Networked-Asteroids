@@ -73,7 +73,7 @@ void RunHostClient()
 			serverNetwork.rcvMutex.lock();
 		
 			mGame.UpdateGameData(deltatime, serverNetwork.rcvQueue.front());
-			serverNetwork.rcvQueue = std::queue<std::string>(); //.pop();
+			serverNetwork.rcvQueue = std::queue<char*>(); //.pop();
 
 			serverNetwork.rcvMutex.unlock();
 		}
@@ -101,7 +101,7 @@ void RunHostClient()
 			window.clear(sf::Color::Black);
 			mGame.Draw(window);
 
-			serverNetwork.Send(mGame.SendGameData().c_str());
+			//serverNetwork.Send(mGame.SendGameData().c_str());
 		
 		}
 		else
@@ -132,8 +132,9 @@ void RunNormalClient(std::string& ip)
 
 	bool bRunning = true;
 
-	std::string test = "Connection request";
-	clientNetwork.Send(test.c_str());
+	//std::string test = "Connection request";
+	//clientNetwork.Send(test.c_str());
+	clientNetwork.SendConnectionRequest();
 
 	sf::RenderWindow window(sf::VideoMode(1280, 720), "Asteroids client");
 
@@ -156,7 +157,7 @@ void RunNormalClient(std::string& ip)
 			clientNetwork.rcvMutex_Client.lock();
 			
 			mGame.UpdateGameData(deltatime, clientNetwork.rcvQueue_Client.front());
-			clientNetwork.rcvQueue_Client = std::queue<std::string>();//.pop();
+			clientNetwork.rcvQueue_Client = std::queue<char*>();//.pop();
 
 			clientNetwork.rcvMutex_Client.unlock();
 		}
@@ -188,7 +189,7 @@ void RunNormalClient(std::string& ip)
 			window.clear(sf::Color::Black);
 			mGame.Draw(window);
 
-			clientNetwork.Send(mGame.SendGameData().c_str());
+			//clientNetwork.Send(mGame.SendGameData().c_str());
 	
 
 		}

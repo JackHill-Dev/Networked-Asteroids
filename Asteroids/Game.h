@@ -57,7 +57,7 @@ public:
 	void Update(const float& deltaTime);
 	void Draw(sf::RenderWindow& wnd);
 
-	void UpdateGameData(float& dt, std::string& gData);
+	void UpdateGameData(float& dt, char* gData);
 
 
 	std::string SendGameData();

@@ -22,7 +22,7 @@ public:
 	bool AllClientsConnected();
 
 	std::mutex rcvMutex;
-	std::queue<std::string> rcvQueue;
+	std::queue<char*> rcvQueue;
 	std::thread rcv;
 private:
 	WSADATA WsaDat;
@@ -46,9 +46,10 @@ public:
 	ClientNetwork(std::string& ip);
 	void Recieve();
 	void Send(const char* msg);
+	void SendConnectionRequest();
 	int& GetID() { return ID; }
 	std::mutex rcvMutex_Client;
-	std::queue<std::string> rcvQueue_Client;
+	std::queue<char*> rcvQueue_Client;
 	std::thread rcv_Client;
 private:
 	WSADATA WsaDat;
