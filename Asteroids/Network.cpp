@@ -136,6 +136,9 @@ void Network::SendPlayerData(const float& x,const float& y, const float& r)
 	memcpy(&buffer[bytesWritten], &y, sizeof(float));
 	bytesWritten += sizeof(float);
 
+	memcpy(&buffer[bytesWritten], &r, sizeof(float));
+	bytesWritten += sizeof(float);
+
 	sendto(sock, buffer, bufferSize, 0, (SOCKADDR*)&clientAddr, clientAddrSize);
 }
 
