@@ -69,6 +69,8 @@ public:
 		return	x * (3.14 / 180);
 	}
 	Player mPlayer;
+	Player mPlayer2;
+
 	bool GameOver();
 	void CreatePlayerPosPacket();
 	void CreateAsteroidPacket();
@@ -99,8 +101,7 @@ private:
 	//ClientNetwork* server;
 
 
-	Player mPlayer2;
-
+	
 	// Text objects
 	sf::Text mPlayer1Txt;
 	sf::Text mPlayer1LivesTxt;

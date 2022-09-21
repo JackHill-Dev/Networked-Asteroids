@@ -191,10 +191,21 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 
 	switch (buffer[0])
 	{
-	case Client_Message::Input:
+	case Server_Message::State:
 	{
-		buffer[0] = Server_Message::State;
-		int32_t bytesWritten = 1;
+		int readIndex = 1;
+		float bufferX = 0, bufferY = 0, rot = 0;
+
+		memcpy(&bufferX, &buffer[readIndex], sizeof(float));
+		readIndex += sizeof(float);
+
+		memcpy(&bufferY, &buffer[readIndex], sizeof(float));
+		readIndex += sizeof(float);
+		
+		memcpy(&rot, &buffer[readIndex], sizeof(float));
+		readIndex += sizeof(float);
+		mPlayer2.spr.setPosition(bufferX, bufferY);
+		mPlayer2.spr.setRotation(rot);
 		// Send back the player/clients game info
 		// this includes both player and asteroid data
 

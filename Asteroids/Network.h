@@ -16,6 +16,7 @@ class Network
 public:
 	Network();
 	void Send(const char* msg);
+	void SendPlayerData(const float& x, const float& y, const float& r);
 	virtual void Recieve();
 	void CloseSockets();
 

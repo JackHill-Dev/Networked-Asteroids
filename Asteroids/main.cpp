@@ -105,6 +105,7 @@ void RunHostClient()
 			window.clear(sf::Color::Black);
 			mGame.Draw(window);
 
+			serverNetwork.SendPlayerData(mGame.mPlayer.spr.getPosition().x, mGame.mPlayer.spr.getPosition().y, mGame.mPlayer.spr.getRotation());
 			//serverNetwork.Send(mGame.SendGameData().c_str());
 		
 		}
