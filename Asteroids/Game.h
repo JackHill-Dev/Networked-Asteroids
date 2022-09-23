@@ -72,8 +72,8 @@ public:
 	Player mPlayer2;
 
 	bool GameOver();
-	void CreatePlayerPosPacket();
-	void CreateAsteroidPacket();
+	char* CreatePlayerPosPacket();
+	char* CreateAsteroidPacket();
 private:
 	void UpdateCollisions(const float& deltaTime);
 	void Shoot(const float& dt, Player& originPlayer, std::vector<Bullet*>& bulletPool);

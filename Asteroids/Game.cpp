@@ -176,7 +176,7 @@ void Game::Draw(sf::RenderWindow& wnd)
 void Game::UpdateGameData(float& dt,  char* buffer)
 {
 
-	/*mPlayer2.DesrializeData(gData);
+	/*
 
 	if(!isHost)
 		DeserialiseAsteroidData(gData);
@@ -204,11 +204,24 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 		
 		memcpy(&rot, &buffer[readIndex], sizeof(float));
 		readIndex += sizeof(float);
+
 		mPlayer2.spr.setPosition(bufferX, bufferY);
 		mPlayer2.spr.setRotation(rot);
-		// Send back the player/clients game info
-		// this includes both player and asteroid data
 
+	}
+	break;
+	case Server_Message::AsteroidData:
+	{
+		int readIndex = 1;
+		for (auto& ast : asteroids)
+		{
+			// Get the flag for if the asteroid is destroyed on the server
+			memcpy(&ast->isDestroyed, &buffer[readIndex], sizeof(&ast->isDestroyed));
+			readIndex += sizeof(&ast->isDestroyed);
+			// Get the asteroids velocity from the server
+			memcpy(&ast->isDestroyed, &buffer[readIndex], sizeof(&ast->isDestroyed));
+			readIndex += sizeof(&ast->isDestroyed);
+		}
 	}
 	break;
 	default: break;
@@ -467,14 +480,16 @@ bool Game::GameOver()
 	return false;
 }
 
-void Game::CreatePlayerPosPacket()
+char* Game::CreatePlayerPosPacket()
 {
 	
 		const int bufferSize = 1024;
-		uint8_t buffer[bufferSize];
-		uint32_t bytesWritten = 0;
+		char buffer[bufferSize];
+		buffer[0] = Client_Message::Input;
+		uint32_t bytesWritten = 1;
 		float x = mPlayer.GetSprite().getPosition().x;
 		float y = mPlayer.GetSprite().getPosition().y;
+		float r = mPlayer.GetSprite().getRotation();
 		
 		memcpy(&buffer[bytesWritten], &x, sizeof(float));
 		bytesWritten += sizeof(float);
@@ -482,36 +497,36 @@ void Game::CreatePlayerPosPacket()
 		memcpy(&buffer[bytesWritten], &y, sizeof(float));
 		bytesWritten += sizeof(float);
 
-		int readIndex = 0;
-		float bufferX = 0, bufferY = 0;
-		memcpy(&bufferX, &buffer[readIndex], sizeof(float));
-		readIndex += sizeof(float);
-		memcpy(&bufferY, &buffer[readIndex], sizeof(float));
-		readIndex += sizeof(float);
+		memcpy(&buffer[bytesWritten], &r, sizeof(float));
+		bytesWritten += sizeof(float);
 		
 }
 
-void Game::CreateAsteroidPacket()
+char* Game::CreateAsteroidPacket()
 {
+	// Packet Structure
+	// [DataType/isDestroyed/Velocity]
 	const int bufferSize = 1024;
-	uint8_t buffer[bufferSize];
-	uint32_t bytesWritten = 0;
+	char buffer[bufferSize];
+	buffer[0] = Server_Message::AsteroidData;
+ 	uint32_t bytesWritten = 1;
 
-	for (int i = 0; i < asteroids.size(); ++i)
+	for (auto& asteroid : asteroids)
 	{
 		// store temp reference to asteroid element
-		Asteroid& ast = *asteroids[i];
+		Asteroid ast = *asteroid;
 
 		memcpy(&buffer[bytesWritten], &ast.isDestroyed, sizeof(bool));
 		bytesWritten += sizeof(bool);
 
-		memcpy(&buffer[bytesWritten], &ast.spr.getPosition(), sizeof(&ast.spr.getPosition()));
-		bytesWritten += sizeof(ast.spr.getPosition());
+		//memcpy(&buffer[bytesWritten], &ast.spr.getPosition(), sizeof(&ast.spr.getPosition()));
+		//bytesWritten += sizeof(ast.spr.getPosition());
 
 		memcpy(&buffer[bytesWritten], &ast.velocity, sizeof(ast.velocity));
 		bytesWritten += sizeof(ast.velocity);
 	}
 
+	return buffer;
 }
 
 int Game::RandomNumberGenerator(int min, int max)

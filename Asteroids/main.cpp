@@ -16,7 +16,6 @@
 #include "Network.h"
 
 //#pragma comment(lib, "ws2_32.lib")	// Use this library whilst linking - contains the Winsock2 implementation.
-
 void SetupConnectingScreen(sf::Font& fnt, sf::Text& txt)
 {
 	fnt.loadFromFile("Assets/Fonts/HISCORE.ttf");
@@ -33,7 +32,7 @@ void SetupConnectingScreen(sf::Font& fnt, sf::Text& txt)
 
 void RunHostClient()
 {
-
+	const int bufferSize = 1024;
 	sf::RenderWindow window(sf::VideoMode(1280, 720), "Asteroids host");
 
 	Game mGame(true);
@@ -98,7 +97,8 @@ void RunHostClient()
 
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
 			{
-				serverNetwork.Send("Fire");
+				// TODO: Create shooting packet
+				//serverNetwork.Send("Fire");
 			}
 
 
@@ -106,6 +106,7 @@ void RunHostClient()
 			mGame.Draw(window);
 
 			serverNetwork.SendPlayerData(mGame.mPlayer.spr.getPosition().x, mGame.mPlayer.spr.getPosition().y, mGame.mPlayer.spr.getRotation());
+			serverNetwork.Send(mGame.CreateAsteroidPacket(), bufferSize);
 			//serverNetwork.Send(mGame.SendGameData().c_str());
 		
 		}
@@ -128,7 +129,7 @@ void RunHostClient()
 
 void RunNormalClient(std::string& ip)
 {
-
+	const int bufferSize = 1024;
 	Game mGame(false);
 	ClientNetwork clientNetwork(ip);
 
@@ -188,14 +189,16 @@ void RunNormalClient(std::string& ip)
 
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
 			{
-				clientNetwork.Send("Fire");
+				// TODO: Create shooting packet
+				//clientNetwork.Send("Fire");
 			}
 
 			window.clear(sf::Color::Black);
 			mGame.Draw(window);
 
+			clientNetwork.Send(mGame.CreatePlayerPosPacket(), bufferSize);
 			//clientNetwork.Send(mGame.SendGameData().c_str());
-			clientNetwork.SendPlayerData(mGame.mPlayer.spr.getPosition().x, mGame.mPlayer.spr.getPosition().y, mGame.mPlayer.spr.getRotation());
+			//clientNetwork.SendPlayerData(mGame.mPlayer.spr.getPosition().x, mGame.mPlayer.spr.getPosition().y, mGame.mPlayer.spr.getRotation());
 
 		}
 		else

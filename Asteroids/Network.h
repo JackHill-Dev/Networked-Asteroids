@@ -15,7 +15,7 @@ class Network
 {
 public:
 	Network();
-	void Send(const char* msg);
+	void Send(char* buffer, const int& bufferSize);
 	void SendPlayerData(const float& x, const float& y, const float& r);
 	virtual void Recieve();
 	void CloseSockets();
@@ -46,7 +46,7 @@ class ClientNetwork
 public:
 	ClientNetwork(std::string& ip);
 	void Recieve();
-	void Send(const char* msg);
+	void Send(char* buffer, const int& bufferSize);
 	void SendPlayerData(const float& x, const float& y, const float& r);
 	void SendConnectionRequest();
 	void Disconnect();

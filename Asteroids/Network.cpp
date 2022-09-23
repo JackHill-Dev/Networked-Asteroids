@@ -105,13 +105,8 @@ bool Network::AllClientsConnected()
 	return ID == maxPlayers;
 }
 
-void Network::Send(const char* msg)
+void Network::Send(char* buffer, const int& bufferSize)
 {
-	const int bufferSize = 2048;
-	char buffer[bufferSize];
-
-	strcpy_s(buffer, msg);
-
 	int result = sendto(sock, buffer, bufferSize, 0, (SOCKADDR*)&clientAddr, clientAddrSize);
 	if (result == SOCKET_ERROR)
 	{
@@ -229,12 +224,8 @@ void ClientNetwork::Recieve()
 	rcv_Client.join();
 }
 
-void ClientNetwork::Send(const char* msg)
+void ClientNetwork::Send(char* buffer, const int& bufferSize)
 {
-	const int bufferSize = 2048;
-	char buffer[bufferSize];
-
-	strcpy_s(buffer, msg);
 	
 	int result = sendto(sock, buffer, bufferSize, 0, (SOCKADDR*)&serveraadr, serverAddrSize);
 	if (result == SOCKET_ERROR)
