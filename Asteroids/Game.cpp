@@ -217,12 +217,26 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 			int readIndex = 1;
 			for (auto& ast : asteroids)
 			{
+				// Store temp asteroid data
+				float x = 0; float y = 0; float rot = 0;
+				bool destroyed = false;
+
 				// Get the flag for if the asteroid is destroyed on the server
-				memcpy(&ast->isDestroyed, &buffer[readIndex], sizeof(&ast->isDestroyed));
+				memcpy(&destroyed, &buffer[readIndex], sizeof(destroyed));
 				readIndex += sizeof(&ast->isDestroyed);
 				// Get the asteroids velocity from the server
-				memcpy(&ast->velocity, &buffer[readIndex], sizeof(&ast->velocity));
+				memcpy(&x, &buffer[readIndex], sizeof(float));
 				readIndex += sizeof(&ast->velocity);
+
+				memcpy(&y, &buffer[readIndex], sizeof(float));
+				readIndex += sizeof(&ast->velocity);
+
+				memcpy(&rot, &buffer[readIndex], sizeof(bool));
+				readIndex += sizeof(&ast->velocity);
+
+				ast->isDestroyed = destroyed;
+				ast->spr.setPosition({ x,y });
+				ast->spr.setRotation(rot);
 			}
 		}
 	}
@@ -518,15 +532,19 @@ char* Game::CreateAsteroidPacket()
 	{
 		// store temp reference to asteroid element
 		Asteroid ast = *asteroid;
-
+		float rot = ast.spr.getRotation();
 		memcpy(&buffer[bytesWritten], &ast.isDestroyed, sizeof(bool));
 		bytesWritten += sizeof(bool);
 
-		//memcpy(&buffer[bytesWritten], &ast.spr.getPosition(), sizeof(&ast.spr.getPosition()));
-		//bytesWritten += sizeof(ast.spr.getPosition());
+		memcpy(&buffer[bytesWritten], &ast.spr.getPosition().x, sizeof(&ast.spr.getPosition().x));
+		bytesWritten += sizeof(ast.spr.getPosition().x);
 
-		memcpy(&buffer[bytesWritten], &ast.velocity, sizeof(ast.velocity));
-		bytesWritten += sizeof(ast.velocity);
+		memcpy(&buffer[bytesWritten], &ast.spr.getPosition().y, sizeof(&ast.spr.getPosition().y));
+		bytesWritten += sizeof(ast.spr.getPosition().y);
+
+		memcpy(&buffer[bytesWritten], &rot, sizeof(&rot));
+		bytesWritten += sizeof(ast.spr.getRotation());
+
 	}
 
 	return buffer;
