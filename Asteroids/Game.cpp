@@ -525,22 +525,20 @@ char* Game::CreateAsteroidPacket()
 	buffer[0] = Server_Message::AsteroidData;
  	uint32_t bytesWritten = 1;
 
-	for (auto& asteroid : asteroids)
+	for (auto& ast : asteroids)
 	{
-		// store temp reference to asteroid element
-		Asteroid ast = *asteroid;
-		float rot = ast.spr.getRotation();
-		memcpy(&buffer[bytesWritten], &ast.isDestroyed, sizeof(bool));
+		float rot = ast->spr.getRotation();
+		memcpy(&buffer[bytesWritten], &ast->isDestroyed, sizeof(bool));
 		bytesWritten += sizeof(bool);
 
-		memcpy(&buffer[bytesWritten], &ast.spr.getPosition().x, sizeof(&ast.spr.getPosition().x));
-		bytesWritten += sizeof(ast.spr.getPosition().x);
+		memcpy(&buffer[bytesWritten], &ast->spr.getPosition().x, sizeof(&ast->spr.getPosition().x));
+		bytesWritten += sizeof(ast->spr.getPosition().x);
 
-		memcpy(&buffer[bytesWritten], &ast.spr.getPosition().y, sizeof(&ast.spr.getPosition().y));
-		bytesWritten += sizeof(ast.spr.getPosition().y);
+		memcpy(&buffer[bytesWritten], &ast->spr.getPosition().y, sizeof(&ast->spr.getPosition().y));
+		bytesWritten += sizeof(ast->spr.getPosition().y);
 
 		memcpy(&buffer[bytesWritten], &rot, sizeof(&rot));
-		bytesWritten += sizeof(ast.spr.getRotation());
+		bytesWritten += sizeof(rot);
 
 	}
 
