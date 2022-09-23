@@ -482,7 +482,6 @@ bool Game::GameOver()
 
 char* Game::CreatePlayerPosPacket()
 {
-	
 		const int bufferSize = 1024;
 		char buffer[bufferSize];
 		buffer[0] = Client_Message::Input;
@@ -500,6 +499,7 @@ char* Game::CreatePlayerPosPacket()
 		memcpy(&buffer[bytesWritten], &r, sizeof(float));
 		bytesWritten += sizeof(float);
 		
+		return buffer;
 }
 
 char* Game::CreateAsteroidPacket()
