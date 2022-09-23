@@ -212,15 +212,18 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 	break;
 	case Server_Message::AsteroidData:
 	{
-		int readIndex = 1;
-		for (auto& ast : asteroids)
+		if (!isHost)
 		{
-			// Get the flag for if the asteroid is destroyed on the server
-			memcpy(&ast->isDestroyed, &buffer[readIndex], sizeof(&ast->isDestroyed));
-			readIndex += sizeof(&ast->isDestroyed);
-			// Get the asteroids velocity from the server
-			memcpy(&ast->velocity, &buffer[readIndex], sizeof(&ast->velocity));
-			readIndex += sizeof(&ast->velocity);
+			int readIndex = 1;
+			for (auto& ast : asteroids)
+			{
+				// Get the flag for if the asteroid is destroyed on the server
+				memcpy(&ast->isDestroyed, &buffer[readIndex], sizeof(&ast->isDestroyed));
+				readIndex += sizeof(&ast->isDestroyed);
+				// Get the asteroids velocity from the server
+				memcpy(&ast->velocity, &buffer[readIndex], sizeof(&ast->velocity));
+				readIndex += sizeof(&ast->velocity);
+			}
 		}
 	}
 	break;
