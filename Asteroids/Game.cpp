@@ -212,8 +212,6 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 	break;
 	case Server_Message::AsteroidData:
 	{
-		if (!isHost)
-		{
 			int readIndex = 1;
 			for (auto& ast : asteroids)
 			{
@@ -238,7 +236,6 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 				ast->spr.setPosition({ x,y });
 				ast->spr.setRotation(rot);
 			}
-		}
 	}
 	break;
 	default: break;
