@@ -219,8 +219,8 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 			memcpy(&ast->isDestroyed, &buffer[readIndex], sizeof(&ast->isDestroyed));
 			readIndex += sizeof(&ast->isDestroyed);
 			// Get the asteroids velocity from the server
-			memcpy(&ast->isDestroyed, &buffer[readIndex], sizeof(&ast->isDestroyed));
-			readIndex += sizeof(&ast->isDestroyed);
+			memcpy(&ast->velocity, &buffer[readIndex], sizeof(&ast->velocity));
+			readIndex += sizeof(&ast->velocity);
 		}
 	}
 	break;
