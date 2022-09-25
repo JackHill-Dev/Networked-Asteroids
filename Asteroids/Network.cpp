@@ -78,6 +78,7 @@ void Network::Recieve()
 				rcvMutex.lock();
 				rcvQueue = std::queue<char*>();
 				rcvQueue.push(buffer);
+				bytesRecieved = iResult;
 				rcvMutex.unlock();
 			}
 			break;
@@ -191,6 +192,7 @@ void ClientNetwork::Recieve()
 		{
 			rcvMutex_Client.lock();
 			rcvQueue_Client.push(buffer);
+			bytesRecieved = iResult;
 			rcvMutex_Client.unlock();
 		}
 		break;
