@@ -173,7 +173,7 @@ void Game::Draw(sf::RenderWindow& wnd)
 		wnd.draw(mPlayer2WinTxt);
 }
 
-void Game::UpdateGameData(float& dt,  char* buffer, const int& bytesRecieved)
+void Game::UpdateGameData(float& dt,  char* buffer)
 {
 
 	/*

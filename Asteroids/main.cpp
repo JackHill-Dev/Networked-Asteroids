@@ -71,7 +71,7 @@ void RunHostClient()
 		{
 			serverNetwork.rcvMutex.lock();
 		
-			mGame.UpdateGameData(deltatime, serverNetwork.rcvQueue.front(), serverNetwork.bytesRecieved);
+			mGame.UpdateGameData(deltatime, serverNetwork.rcvQueue.front());
 			serverNetwork.rcvQueue = std::queue<char*>(); //.pop();
 
 			serverNetwork.rcvMutex.unlock();
@@ -162,7 +162,7 @@ void RunNormalClient(std::string& ip)
 		{
 			clientNetwork.rcvMutex_Client.lock();
 			
-			mGame.UpdateGameData(deltatime, clientNetwork.rcvQueue_Client.front(), clientNetwork.bytesRecieved);
+			mGame.UpdateGameData(deltatime, clientNetwork.rcvQueue_Client.front());
 			clientNetwork.rcvQueue_Client = std::queue<char*>();//.pop();
 
 			clientNetwork.rcvMutex_Client.unlock();
