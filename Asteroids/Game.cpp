@@ -214,30 +214,32 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 	{
 		// Packet Structure
 		// [DataType/isDestroyed/X/Y/Rotation]
+		// [DataType/isDestroyed/Velocity/Rotation]
 		int readIndex = 1;
 
 			for (auto& ast : asteroids)
 			{
 					// Store temp asteroid data
-					float x = 0; float y = 0; float rot = 0;
-					bool destroyed = false;
+				float x = 0; float y = 0; float rot = 0; sf::Vector2f vel;
+				bool destroyed = false;
 
-					// Get the flag for if the asteroid is destroyed on the server
-					memcpy(&destroyed, &buffer[readIndex], sizeof(destroyed));
-					readIndex += sizeof(destroyed);
-					// Get the asteroids velocity from the server
-					memcpy(&x, &buffer[readIndex], sizeof(float));
-					readIndex += sizeof(x);
+				// Get the flag for if the asteroid is destroyed on the server
+				memcpy(&destroyed, &buffer[readIndex], sizeof(destroyed));
+				readIndex += sizeof(destroyed);
+				// Get the asteroids velocity from the server
+				memcpy(&vel, &buffer[readIndex], sizeof(vel));
+				readIndex += sizeof(vel);
 
-					memcpy(&y, &buffer[readIndex], sizeof(float));
-					readIndex += sizeof(y);
+				/*memcpy(&y, &buffer[readIndex], sizeof(float));
+				readIndex += sizeof(y);*/
 
-					memcpy(&rot, &buffer[readIndex], sizeof(float));
-					readIndex += sizeof(rot);
+				memcpy(&rot, &buffer[readIndex], sizeof(float));
+				readIndex += sizeof(rot);
 
-					ast->isDestroyed = destroyed;
-					ast->spr.setPosition(x, y);
-					ast->spr.setRotation(rot);
+				ast->isDestroyed = destroyed;
+				ast->velocity = vel;
+				//ast->spr.setPosition(x, y);
+				ast->spr.setRotation(rot);
 			}
 			
 	}
@@ -524,6 +526,7 @@ char* Game::CreateAsteroidPacket()
 {
 	// Packet Structure
 	// [DataType/isDestroyed/X/Y/Rotation]
+	// [DataType/isDestroyed/Velocity/Rotation]
 	const int bufferSize = 1024;
 	char buffer[bufferSize];
 	buffer[0] = Server_Message::AsteroidData;
@@ -536,11 +539,11 @@ char* Game::CreateAsteroidPacket()
 		memcpy(&buffer[bytesWritten], &ast->isDestroyed, sizeof(bool));
 		bytesWritten += sizeof(bool);
 
-		memcpy(&buffer[bytesWritten], &ast->spr.getPosition().x, sizeof(&ast->spr.getPosition().x));
-		bytesWritten += sizeof(ast->spr.getPosition().x);
+		memcpy(&buffer[bytesWritten], &ast->velocity, sizeof(&ast->velocity));
+		bytesWritten += sizeof(ast->velocity);
 
-		memcpy(&buffer[bytesWritten], &ast->spr.getPosition().y, sizeof(&ast->spr.getPosition().y));
-		bytesWritten += sizeof(ast->spr.getPosition().y);
+		//memcpy(&buffer[bytesWritten], &ast->spr.getPosition().y, sizeof(&ast->spr.getPosition().y));
+		//bytesWritten += sizeof(ast->spr.getPosition().y);
 
 		memcpy(&buffer[bytesWritten], &rot, sizeof(&rot));
 		bytesWritten += sizeof(rot);
