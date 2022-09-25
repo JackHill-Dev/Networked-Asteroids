@@ -25,7 +25,6 @@ public:
 	std::mutex rcvMutex;
 	std::queue<char*> rcvQueue;
 	std::thread rcv;
-	int bytesRecieved;
 private:
 	WSADATA WsaDat;
 	SOCKET sock;
@@ -55,7 +54,6 @@ public:
 	std::mutex rcvMutex_Client;
 	std::queue<char*> rcvQueue_Client;
 	std::thread rcv_Client;
-	int bytesRecieved = 0;
 private:
 	WSADATA WsaDat;
 	SOCKET sock;

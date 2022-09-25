@@ -78,7 +78,6 @@ void Network::Recieve()
 				rcvMutex.lock();
 				rcvQueue = std::queue<char*>();
 				rcvQueue.push(buffer);
-				bytesRecieved = iResult;
 				rcvMutex.unlock();
 			}
 			break;
@@ -192,34 +191,10 @@ void ClientNetwork::Recieve()
 		{
 			rcvMutex_Client.lock();
 			rcvQueue_Client.push(buffer);
-			bytesRecieved = iResult;
 			rcvMutex_Client.unlock();
 		}
 		break;
 		}
-		
-		/*else
-		{
-			std::string data;
-			data = buffer;
-
-			if (!data.empty() || data != " ")
-			{
-
-				if (strstr(data.c_str(), "ID"))
-				{
-					std::cout << "Sucessful connection, " << data << std::endl;
-					size_t pos = 0;
-					pos = data.find_first_of(':');
-					data = data[++pos];
-					ID = std::stoi(data);
-					std::cout << std::to_string(ID) << std::endl;
-				}
-
-				
-			}
-		}*/
-
 
 	}
 

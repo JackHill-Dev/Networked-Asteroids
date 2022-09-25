@@ -214,12 +214,10 @@ void Game::UpdateGameData(float& dt,  char* buffer, const int& bytesRecieved)
 	{
 		// Packet Structure
 		// [DataType/isDestroyed/X/Y/Rotation]
-			int readIndex = 1;
-			int objectIndex = 0;
-			while (readIndex < bytesRecieved)
+		int readIndex = 1;
+
+			for (auto& ast : asteroids)
 			{
-				//for (auto& ast : asteroids)
-				//{
 					// Store temp asteroid data
 					float x = 0; float y = 0; float rot = 0;
 					bool destroyed = false;
@@ -237,12 +235,11 @@ void Game::UpdateGameData(float& dt,  char* buffer, const int& bytesRecieved)
 					memcpy(&rot, &buffer[readIndex], sizeof(float));
 					readIndex += sizeof(rot);
 
-					asteroids[objectIndex]->isDestroyed = destroyed;
-					asteroids[objectIndex]->spr.setPosition(x, y);
-					asteroids[objectIndex]->spr.setRotation(rot);
-					objectIndex++;
-				//}
+					ast->isDestroyed = destroyed;
+					ast->spr.setPosition(x, y);
+					ast->spr.setRotation(rot);
 			}
+			
 	}
 	break;
 	default: break;
