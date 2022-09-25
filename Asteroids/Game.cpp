@@ -233,13 +233,13 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 				/*memcpy(&y, &buffer[readIndex], sizeof(float));
 				readIndex += sizeof(y);*/
 
-				memcpy(&rot, &buffer[readIndex], sizeof(float));
-				readIndex += sizeof(rot);
+				//memcpy(&rot, &buffer[readIndex], sizeof(float));
+				//readIndex += sizeof(rot);
 
 				ast->isDestroyed = destroyed;
 				ast->velocity = vel;
 				//ast->spr.setPosition(x, y);
-				ast->spr.setRotation(rot);
+				//ast->spr.setRotation(rot);
 			}
 			
 	}
@@ -545,8 +545,8 @@ char* Game::CreateAsteroidPacket()
 		//memcpy(&buffer[bytesWritten], &ast->spr.getPosition().y, sizeof(&ast->spr.getPosition().y));
 		//bytesWritten += sizeof(ast->spr.getPosition().y);
 
-		memcpy(&buffer[bytesWritten], &rot, sizeof(&rot));
-		bytesWritten += sizeof(rot);
+		//memcpy(&buffer[bytesWritten], &rot, sizeof(&rot));
+		//bytesWritten += sizeof(rot);
 
 	}
 
