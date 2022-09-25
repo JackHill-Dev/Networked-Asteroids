@@ -113,15 +113,15 @@ void Game::Update(const float& deltaTime)
 		DisableBullet(b); // Checks if bullets are out of range and put it back into pool in a static state
 	}
 
-	if (isHost)
-	{
+	//if (isHost)
+	//{
 		for (auto& a : asteroids)
 		{
 			a->spr.rotate(50 * deltaTime);
 			a->spr.move(a->velocity * deltaTime);
 			WrapObject(a->spr);
 		}
-	}
+	//}
 	
 
 	UpdateCollisions(deltaTime);
