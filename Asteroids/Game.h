@@ -31,7 +31,6 @@ public:
 struct Asteroid
 {
 public:
-
 	Asteroid(sf::Vector2f startPos, sf::Vector2f startVel)
 	{
 		texture.loadFromFile("asteroid.png");
