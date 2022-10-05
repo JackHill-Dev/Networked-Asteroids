@@ -47,7 +47,6 @@ void RunHostClient()
 	bool bRunning = true;
 	bool gameStart = false;
 
-	mGame.CreateAsteroidPacket();
 	SetupConnectingScreen(fnt, conTxt);
 	bool keyPressed = false;
 	while (bRunning)
@@ -106,7 +105,12 @@ void RunHostClient()
 			mGame.Draw(window);
 
 			serverNetwork.SendPlayerData(mGame.mPlayer.spr.getPosition().x, mGame.mPlayer.spr.getPosition().y, mGame.mPlayer.spr.getRotation());
-			serverNetwork.Send(mGame.CreateAsteroidPacket(), bufferSize);
+			
+			// Send Asteroids one at a time
+			for (unsigned int i = 0; i < mGame.GetAsteroids().size(); i++)
+			{
+				serverNetwork.Send(mGame.CreateAsteroidPacket(i), bufferSize);
+			}
 			//serverNetwork.Send(mGame.SendGameData().c_str());
 		
 		}

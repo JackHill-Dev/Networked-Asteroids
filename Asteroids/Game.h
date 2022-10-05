@@ -73,6 +73,8 @@ public:
 	bool GameOver();
 	char* CreatePlayerPosPacket();
 	char* CreateAsteroidPacket();
+	char* CreateAsteroidPacket(int objectIndex);
+	std::vector<Asteroid*>& GetAsteroids() { return asteroids; }
 private:
 	void UpdateCollisions(const float& deltaTime);
 	void Shoot(const float& dt, Player& originPlayer, std::vector<Bullet*>& bulletPool);

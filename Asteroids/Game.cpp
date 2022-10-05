@@ -217,7 +217,7 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 		// [DataType/objectIndex/isDestroyed/Velocity/Rotation]
 		int readIndex = 1;
 
-		for (size_t i = 0; i < asteroids.size(); ++i)
+		for (size_t i = 0; i < asteroids.size(); i++)
 		{
 			
 			// Store temp asteroid data
@@ -538,7 +538,7 @@ char* Game::CreateAsteroidPacket()
 
 	for (size_t i = 0; i < asteroids.size(); ++i)
 	{
-		const Asteroid& ast = *asteroids[i];
+		Asteroid& ast = *asteroids[i];
 		int object_index = i;
 		float rot = ast.spr.getRotation();
 
@@ -558,6 +558,28 @@ char* Game::CreateAsteroidPacket()
 		//bytesWritten += sizeof(rot);
 
 	}
+
+	return buffer;
+}
+
+char* Game::CreateAsteroidPacket(int objectIndex)
+{
+	const int bufferSize = 1024;
+	char buffer[bufferSize];
+	buffer[0] = Server_Message::AsteroidData;
+	uint32_t bytesWritten = 1;
+
+	Asteroid& ast = *asteroids[objectIndex];
+	float rot = ast.spr.getRotation();
+
+	memcpy(&buffer[bytesWritten], &objectIndex, sizeof(int));
+	bytesWritten += sizeof(int);
+
+	memcpy(&buffer[bytesWritten], &ast.isDestroyed, sizeof(bool));
+	bytesWritten += sizeof(bool);
+
+	memcpy(&buffer[bytesWritten], &ast.velocity, sizeof(&ast.velocity));
+	bytesWritten += sizeof(ast.velocity);
 
 	return buffer;
 }
