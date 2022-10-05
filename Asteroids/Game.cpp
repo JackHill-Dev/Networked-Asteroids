@@ -217,8 +217,8 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 		// [DataType/objectIndex/isDestroyed/Velocity/Rotation]
 		int readIndex = 1;
 
-		for (size_t i = 0; i < asteroids.size(); i++)
-		{
+		//for (size_t i = 0; i < asteroids.size(); i++)
+		//{
 			
 			// Store temp asteroid data
 			int objectIndex = 0;
@@ -244,7 +244,7 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 			asteroids[objectIndex]->velocity = vel;
 			//ast->spr.setPosition(x, y);
 			//ast->spr.setRotation(rot);
-		}
+		//}
 			
 	}
 	break;
