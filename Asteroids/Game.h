@@ -53,6 +53,12 @@ struct AsteroidDataPacket
 	sf::Vector2f Velocity;
 
 };
+struct PlayerDataPacket
+{
+	float Rotation;
+	sf::Vector2f Position;
+
+};
 struct PlayerInfoPacket
 {
 	int Score;
@@ -79,7 +85,7 @@ public:
 	Player mPlayer2;
 
 	bool GameOver();
-	char* CreatePlayerPosPacket();
+	char* CreatePlayerPosPacket(bool isHost);
 	char* CreateAsteroidPacket();
 	char* CreateAsteroidPacket(int objectIndex);
 	char* CreatePlayerInfoPacket();

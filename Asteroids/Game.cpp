@@ -199,22 +199,19 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 
 	switch (buffer[0])
 	{
+	case Client_Message::PlayerData:
 	case Server_Message::State:
 	{
 		int readIndex = 1;
 		float bufferX = 0, bufferY = 0, rot = 0;
+		PlayerDataPacket playerData;
 
-		memcpy(&bufferX, &buffer[readIndex], sizeof(float));
-		readIndex += sizeof(float);
 
-		memcpy(&bufferY, &buffer[readIndex], sizeof(float));
-		readIndex += sizeof(float);
-		
-		memcpy(&rot, &buffer[readIndex], sizeof(float));
-		readIndex += sizeof(float);
+		memcpy(&bufferX, &buffer[readIndex], sizeof(PlayerDataPacket));
+		readIndex += sizeof(PlayerDataPacket);
 
-		mPlayer2.spr.setPosition(bufferX, bufferY);
-		mPlayer2.spr.setRotation(rot);
+		mPlayer2.spr.setPosition(playerData.Position);
+		mPlayer2.spr.setRotation(playerData.Rotation);
 
 	}
 	break;
@@ -330,24 +327,20 @@ bool Game::GameOver()
 	return false;
 }
 
-char* Game::CreatePlayerPosPacket()
+char* Game::CreatePlayerPosPacket(bool isHost)
 {
 		const int bufferSize = 1024;
 		char buffer[bufferSize];
-		buffer[0] = Client_Message::Input;
+		buffer[0] = isHost ? Server_Message::State : Client_Message::PlayerData;
 		uint32_t bytesWritten = 1;
-		float x = mPlayer.GetSprite().getPosition().x;
-		float y = mPlayer.GetSprite().getPosition().y;
-		float r = mPlayer.GetSprite().getRotation();
+		PlayerDataPacket playerData =
+		{
+			.Rotation = mPlayer.GetSprite().getRotation(),
+			.Position = mPlayer.GetSprite().getPosition()
+		};
 		
-		memcpy(&buffer[bytesWritten], &x, sizeof(float));
-		bytesWritten += sizeof(float);
-
-		memcpy(&buffer[bytesWritten], &y, sizeof(float));
-		bytesWritten += sizeof(float);
-
-		memcpy(&buffer[bytesWritten], &r, sizeof(float));
-		bytesWritten += sizeof(float);
+		memcpy(&buffer[bytesWritten], &playerData, sizeof(PlayerDataPacket));
+		bytesWritten += sizeof(PlayerDataPacket);
 		
 		return buffer;
 }

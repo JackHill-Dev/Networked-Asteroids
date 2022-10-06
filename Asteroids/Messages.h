@@ -4,6 +4,7 @@ enum  Client_Message : unsigned char
 	Join,
 	Leave,
 	Input,
+	PlayerData
 	
 };
 
