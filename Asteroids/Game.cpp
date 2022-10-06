@@ -122,6 +122,14 @@ void Game::Update(const float& deltaTime)
 			WrapObject(a->spr);
 		}
 	}
+	else
+	{
+		for (auto& a : asteroids)
+		{
+			a->spr.move(a->velocity * deltaTime);
+			WrapObject(a->spr);
+		}
+	}
 	
 
 	UpdateCollisions(deltaTime);
