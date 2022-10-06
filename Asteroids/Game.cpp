@@ -113,15 +113,15 @@ void Game::Update(const float& deltaTime)
 		DisableBullet(b); // Checks if bullets are out of range and put it back into pool in a static state
 	}
 
-	//if (isHost)
-	//{
+	if (isHost)
+	{
 		for (auto& a : asteroids)
 		{
 			a->spr.rotate(50 * deltaTime);
 			a->spr.move(a->velocity * deltaTime);
 			WrapObject(a->spr);
 		}
-	//}
+	}
 	
 
 	UpdateCollisions(deltaTime);
@@ -217,34 +217,38 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 		// [DataType/objectIndex/isDestroyed/Velocity/Rotation]
 		int readIndex = 1;
 
-		//for (size_t i = 0; i < asteroids.size(); i++)
-		//{
-			
-			// Store temp asteroid data
-			int objectIndex = 0;
-			float x = 0; float y = 0; float rot = 0; sf::Vector2f vel;
-			bool destroyed = false;
+		AsteroidDataPacket astData;
+		memcpy(&astData, &buffer[readIndex], sizeof(AsteroidDataPacket));
+		asteroids[astData.id]->isDestroyed = astData.Destroyed;
+		asteroids[astData.id]->velocity = astData.Velocity
+		////for (size_t i = 0; i < asteroids.size(); i++)
+		////{
+		//	
+		//	// Store temp asteroid data
+		//	int objectIndex = 0;
+		//	float x = 0; float y = 0; float rot = 0; sf::Vector2f vel;
+		//	bool destroyed = false;
 
-			memcpy(&objectIndex, &buffer[readIndex], sizeof(int));
-			readIndex += sizeof(int);
-			// Get the flag for if the asteroid is destroyed on the server
-			memcpy(&destroyed, &buffer[readIndex], sizeof(destroyed));
-			readIndex += sizeof(destroyed);
-			// Get the asteroids velocity from the server
-			memcpy(&vel, &buffer[readIndex], sizeof(vel));
-			readIndex += sizeof(vel);
+		//	memcpy(&objectIndex, &buffer[readIndex], sizeof(int));
+		//	readIndex += sizeof(int);
+		//	// Get the flag for if the asteroid is destroyed on the server
+		//	memcpy(&destroyed, &buffer[readIndex], sizeof(destroyed));
+		//	readIndex += sizeof(destroyed);
+		//	// Get the asteroids velocity from the server
+		//	memcpy(&vel, &buffer[readIndex], sizeof(vel));
+		//	readIndex += sizeof(vel);
 
-			/*memcpy(&y, &buffer[readIndex], sizeof(float));
-			readIndex += sizeof(y);*/
+		//	/*memcpy(&y, &buffer[readIndex], sizeof(float));
+		//	readIndex += sizeof(y);*/
 
-			//memcpy(&rot, &buffer[readIndex], sizeof(float));
-			//readIndex += sizeof(rot);
-			
-			asteroids[objectIndex]->isDestroyed = destroyed;
-			asteroids[objectIndex]->velocity = vel;
-			//ast->spr.setPosition(x, y);
-			//ast->spr.setRotation(rot);
-		//}
+		//	//memcpy(&rot, &buffer[readIndex], sizeof(float));
+		//	//readIndex += sizeof(rot);
+		//	
+		//	asteroids[objectIndex]->isDestroyed = destroyed;
+		//	asteroids[objectIndex]->velocity = vel;
+		//	//ast->spr.setPosition(x, y);
+		//	//ast->spr.setRotation(rot);
+		////}
 			
 	}
 	break;
@@ -572,14 +576,17 @@ char* Game::CreateAsteroidPacket(int objectIndex)
 	Asteroid& ast = *asteroids[objectIndex];
 	float rot = ast.spr.getRotation();
 
-	memcpy(&buffer[bytesWritten], &objectIndex, sizeof(int));
+	AsteroidDataPacket astData =
+	{
+		.id = objectIndex,
+		.Destroyed = ast.isDestroyed,
+		.Rotation = ast.spr.getRotation(),
+		.Position = ast.spr.getPosition(),
+		.Velocity = ast.velocity
+	};
+
+	memcpy(&buffer[bytesWritten], &astData, sizeof(AsteroidDataPacket));
 	bytesWritten += sizeof(int);
-
-	memcpy(&buffer[bytesWritten], &ast.isDestroyed, sizeof(bool));
-	bytesWritten += sizeof(bool);
-
-	memcpy(&buffer[bytesWritten], &ast.velocity, sizeof(&ast.velocity));
-	bytesWritten += sizeof(ast.velocity);
 
 	return buffer;
 }

@@ -30,7 +30,6 @@ public:
 
 struct Asteroid
 {
-public:
 	Asteroid(sf::Vector2f startPos, sf::Vector2f startVel)
 	{
 		texture.loadFromFile("asteroid.png");
@@ -45,7 +44,15 @@ public:
 	sf::Texture texture;
 	
 };
+struct AsteroidDataPacket
+{
+	int id = 0;
+	bool Destroyed = false;
+	float Rotation = 0;
+	sf::Vector2f Position;
+	sf::Vector2f Velocity;
 
+};
 typedef int PlayerID;
 
 class Game
