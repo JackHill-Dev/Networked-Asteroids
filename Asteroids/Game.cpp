@@ -558,7 +558,7 @@ char* Game::CreateAsteroidPacket()
 	buffer[0] = Server_Message::AsteroidData;
  	uint32_t bytesWritten = 1;
 
-	for (size_t i = 0; i < asteroids.size(); ++i)
+	for (unsigned int i = 0; i < asteroids.size(); ++i)
 	{
 		AsteroidDataPacket astData =
 		{
