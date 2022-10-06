@@ -220,7 +220,7 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 		AsteroidDataPacket astData;
 		memcpy(&astData, &buffer[readIndex], sizeof(AsteroidDataPacket));
 		asteroids[astData.id]->isDestroyed = astData.Destroyed;
-		asteroids[astData.id]->velocity = astData.Velocity
+		asteroids[astData.id]->velocity = astData.Velocity;
 		////for (size_t i = 0; i < asteroids.size(); i++)
 		////{
 		//	
@@ -586,7 +586,7 @@ char* Game::CreateAsteroidPacket(int objectIndex)
 	};
 
 	memcpy(&buffer[bytesWritten], &astData, sizeof(AsteroidDataPacket));
-	bytesWritten += sizeof(int);
+	bytesWritten += sizeof(AsteroidDataPacket);
 
 	return buffer;
 }
