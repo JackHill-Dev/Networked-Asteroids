@@ -105,7 +105,7 @@ void RunHostClient()
 			mGame.Draw(window);
 
 			//serverNetwork.SendPlayerData(mGame.mPlayer.spr.getPosition().x, mGame.mPlayer.spr.getPosition().y, mGame.mPlayer.spr.getRotation());
-			serverNetwork.Send(mGame.CreatePlayerPosPacket(), bufferSize);
+			serverNetwork.Send(mGame.CreatePlayerPosPacket(true), bufferSize);
 			
 			serverNetwork.Send(mGame.CreateAsteroidPacket(), bufferSize);
 
@@ -198,7 +198,7 @@ void RunNormalClient(std::string& ip)
 			window.clear(sf::Color::Black);
 			mGame.Draw(window);
 
-			clientNetwork.Send(mGame.CreatePlayerPosPacket(), bufferSize);
+			clientNetwork.Send(mGame.CreatePlayerPosPacket(false), bufferSize);
 			//clientNetwork.Send(mGame.SendGameData().c_str());
 			//clientNetwork.SendPlayerData(mGame.mPlayer.spr.getPosition().x, mGame.mPlayer.spr.getPosition().y, mGame.mPlayer.spr.getRotation());
 
