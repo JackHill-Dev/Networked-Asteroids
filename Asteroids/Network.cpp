@@ -211,27 +211,6 @@ void ClientNetwork::Send(char* buffer, const int& bufferSize)
 	}
 }
 
-void ClientNetwork::SendPlayerData(const float& x, const float& y, const float& r)
-{
-	const int bufferSize = 1024;
-	char buffer[bufferSize];
-	uint32_t bytesWritten = 0;
-
-	buffer[0] = Client_Message::Input;
-	bytesWritten = 1;
-
-	memcpy(&buffer[bytesWritten], &x, sizeof(float));
-	bytesWritten += sizeof(float);
-
-	memcpy(&buffer[bytesWritten], &y, sizeof(float));
-	bytesWritten += sizeof(float);
-
-	memcpy(&buffer[bytesWritten], &r, sizeof(float));
-	bytesWritten += sizeof(float);
-
-	sendto(sock, buffer, bufferSize, 0, (SOCKADDR*)&serveraadr, serverAddrSize);
-}
-
 void ClientNetwork::SendConnectionRequest()
 {
 	const int bufferSize = 1024;

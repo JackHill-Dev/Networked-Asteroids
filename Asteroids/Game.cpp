@@ -221,8 +221,7 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 	case Server_Message::AsteroidData:
 	{
 		// Packet Structure
-		// [DataType/objectIndex/isDestroyed/X/Y/Rotation]
-		// [DataType/objectIndex/isDestroyed/Velocity/Rotation]
+		// [DataType/AsteroidDataPacket]
 		if (!isHost)
 		{
 			int readIndex = 1;
@@ -239,207 +238,12 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 				readIndex += sizeof(AsteroidDataPacket);
 			}
 		}
-		////for (size_t i = 0; i < asteroids.size(); i++)
-		////{
-		//	
-		//	// Store temp asteroid data
-		//	int objectIndex = 0;
-		//	float x = 0; float y = 0; float rot = 0; sf::Vector2f vel;
-		//	bool destroyed = false;
 
-		//	memcpy(&objectIndex, &buffer[readIndex], sizeof(int));
-		//	readIndex += sizeof(int);
-		//	// Get the flag for if the asteroid is destroyed on the server
-		//	memcpy(&destroyed, &buffer[readIndex], sizeof(destroyed));
-		//	readIndex += sizeof(destroyed);
-		//	// Get the asteroids velocity from the server
-		//	memcpy(&vel, &buffer[readIndex], sizeof(vel));
-		//	readIndex += sizeof(vel);
-
-		//	/*memcpy(&y, &buffer[readIndex], sizeof(float));
-		//	readIndex += sizeof(y);*/
-
-		//	//memcpy(&rot, &buffer[readIndex], sizeof(float));
-		//	//readIndex += sizeof(rot);
-		//	
-		//	asteroids[objectIndex]->isDestroyed = destroyed;
-		//	asteroids[objectIndex]->velocity = vel;
-		//	//ast->spr.setPosition(x, y);
-		//	//ast->spr.setRotation(rot);
-		////}
-			
 	}
 	break;
 	default: break;
 	}
 
-}
-
-void Game::DeserialiseAsteroidData(std::string& astData)
-{
-	std::string test = astData;
-
-	float x, y, r;
-	int elementPos;
-	bool destroyed = false;
-	int pos = 0;
-	std::string result;
-	bool finished = false;
-	if (strstr(astData.c_str(), "Asteroids"))
-	{
-		pos = astData.find_first_of('[');
-		astData.erase(astData.begin(), astData.begin() + pos + 1);
-		//pos++;
-
-		
-		while ( !astData.empty() && astData.front() != ']')
-		{
-			if (astData[pos] != ',')
-			{
-				// Find element position
-				elementPos = FindNextValue(astData, 1, '/');
-				
-				// Find destroyed state
-				destroyed = FindNextValue(astData, 1, '/');
-				// Find all positional information
-				x = FindNextValue(astData, 7, '.');
-				y = FindNextValue(astData, 7, '.');
-				r = FindNextValue(astData, 7, '.');
-
-				//if (!(elementPos > asteroids.size()))
-				//{
-					// Apply updated information to specific asteroid
-					asteroids[elementPos]->spr.setPosition(x, y);
-					asteroids[elementPos]->spr.setRotation(r);
-					asteroids[elementPos]->isDestroyed = destroyed;
-
-					astData.erase(astData.begin());
-				//}
-
-
-
-			}
-			else
-				astData.erase(astData.begin());
-	
-			
-		}
-
-	}
-}
-
-void Game::DeserialisePlayerData(std::string& pData)
-{
-	int pos = 0, lives, score = 0;
-	
-	if (strstr(pData.c_str(), "Info/"))
-	{
-		pData.erase(pData.begin(), pData.begin() + pos + 5);
-
-		score = FindNextValue(pData, 1, '/');
-		lives = FindNextValue(pData, 1, '/');
-
-		mPlayer2.score = score;
-
-	}
-}
-
-float Game::FindNextValue(std::string& str, int charAmount, char seperator)
-{
-	std::string temp;
-	float val = 0;
-	int pos = 0;
-
-	if (charAmount == 7)
-	{
-		if (str.front() == '/')
-			str.erase(str.begin());
-
-		if (str.front() == ',')
-			str.erase(str.begin());
-
-		while (str[pos] != seperator)
-		{
-			temp += str[pos++];
-		}
-
-		temp += str.substr(pos, pos + charAmount);
-
-		val = std::stof(temp);
-
-		str.erase(str.begin(), str.begin() + charAmount + pos);
-
-		pos = 0;
-	}
-	else
-	{
-
-		if (str.front() == '/')
-			str.erase(str.begin());
-
-		while (str[pos] != seperator)
-		{
-			temp += str[pos++];
-		}
-
-		val = std::stof(temp);
-
-		str.erase(str.begin(), str.begin() + charAmount + 1);
-
-		pos = 0;
-	}
-
-
-	return val;
-}
-
-
-std::string Game::SendGameData()
-{
-	std::string posPacket = isHost ? mPlayer.SerializeData() + SendAsteroidData() + SendPlayerInfoData() : mPlayer.SerializeData() + SendPlayerInfoData();
-
-	return posPacket;
-}
-
-
-
-std::string Game::SendAsteroidData()
-{
-	char seperator = '/';
-	float x, y, r;
-	int elementPos = 0;
-
-	std::string asteroidsStr;
-
-
-	asteroidsStr += "Asteroids[";
-
-
-	for (auto& a : asteroids)
-	{
-		x = a->spr.getPosition().x;
-		y = a->spr.getPosition().y;
-		r = a->spr.getRotation();
-
-		// Contruct asteroid string
-		// [x/y/r/elementPos/bDestroyed],
-		asteroidsStr += std::to_string(elementPos) + seperator +										  // Element position in vector
-			BoolToString(a->isDestroyed) + seperator  +													 //  destroyed state
-			std::to_string(x) + seperator + std::to_string(y) + seperator + std::to_string(r) + ',';	//  Positional data
-
-		++elementPos;
-	}
-
-	asteroidsStr += ']';
-
-	return asteroidsStr;
-}
-
-std::string Game::SendPlayerInfoData()
-{
-	std::string pData = "Info/" + std::to_string(mPlayer.score) + "/" + std::to_string(mPlayer.lives) + "/\0";
-
-	return pData;
 }
 
 void Game::Shoot(const float& dt, Player& originPlayer, std::vector<Bullet*>& bulletPool)
@@ -551,8 +355,7 @@ char* Game::CreatePlayerPosPacket()
 char* Game::CreateAsteroidPacket()
 {
 	// Packet Structure
-	// [DataType/isDestroyed/X/Y/Rotation]
-	// [DataType/isDestroyed/Velocity/Rotation]
+	// [DataType/AsteroidDataPacket]
 	const int bufferSize = 1024;
 	char buffer[bufferSize];
 	buffer[0] = Server_Message::AsteroidData;
@@ -571,27 +374,6 @@ char* Game::CreateAsteroidPacket()
 
 		memcpy(&buffer[bytesWritten], &astData, sizeof(AsteroidDataPacket));
 		bytesWritten += sizeof(AsteroidDataPacket);
-
-
-		/*Asteroid& ast = *asteroids[i];
-		int object_index = i;
-		float rot = ast.spr.getRotation();
-
-		memcpy(&buffer[bytesWritten], &object_index, sizeof(int));
-		bytesWritten += sizeof(int);
-
-		memcpy(&buffer[bytesWritten], &ast.isDestroyed, sizeof(bool));
-		bytesWritten += sizeof(bool);
-
-		memcpy(&buffer[bytesWritten], &ast.velocity, sizeof(&ast.velocity));
-		bytesWritten += sizeof(ast.velocity);*/
-
-		//memcpy(&buffer[bytesWritten], &ast->spr.getPosition().y, sizeof(&ast->spr.getPosition().y));
-		//bytesWritten += sizeof(ast->spr.getPosition().y);
-
-		//memcpy(&buffer[bytesWritten], &rot, sizeof(&rot));
-		//bytesWritten += sizeof(rot);
-
 	}
 
 	return buffer;
@@ -623,18 +405,29 @@ char* Game::CreateAsteroidPacket(int objectIndex)
 	return buffer;
 }
 
+char* Game::CreatePlayerInfoPacket()
+{
+	const int bufferSize = 1024;
+	char buffer[bufferSize];
+	buffer[0] = Server_Message::AsteroidData;
+	uint32_t bytesWritten = 1;
+
+	PlayerInfoPacket playerInfo =
+	{
+		.Score = mPlayer.score,
+		.Lives = mPlayer.lives
+	};
+
+	memcpy(&buffer[bytesWritten], &playerInfo, sizeof(PlayerInfoPacket));
+	bytesWritten += sizeof(PlayerInfoPacket);
+
+	return buffer;
+}
+
 int Game::RandomNumberGenerator(int min, int max)
 {
 	std::uniform_int_distribution<int> distribution(min, max);
 	return distribution(random_number_engine);
-}
-
-std::string Game::BoolToString(bool& b)
-{
-	if (b)
-		return "1";
-	else
-		return "0";
 }
 
 

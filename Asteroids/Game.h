@@ -53,6 +53,12 @@ struct AsteroidDataPacket
 	sf::Vector2f Velocity;
 
 };
+struct PlayerInfoPacket
+{
+	int Score;
+	int Lives;
+};
+
 typedef int PlayerID;
 
 class Game
@@ -65,11 +71,6 @@ public:
 
 	void UpdateGameData(float& dt, char* buffer);
 
-
-	std::string SendGameData();
-	std::string SendAsteroidData();
-	std::string SendPlayerInfoData();
-
 	float ToRadians(float x)
 	{
 		return	x * (3.14 / 180);
@@ -81,6 +82,7 @@ public:
 	char* CreatePlayerPosPacket();
 	char* CreateAsteroidPacket();
 	char* CreateAsteroidPacket(int objectIndex);
+	char* CreatePlayerInfoPacket();
 	std::vector<Asteroid*>& GetAsteroids() { return asteroids; }
 private:
 	void UpdateCollisions(const float& deltaTime);
@@ -92,11 +94,6 @@ private:
 
 
 	int RandomNumberGenerator(int min, int max);
-
-	void DeserialiseAsteroidData(std::string& astData);
-	void DeserialisePlayerData(std::string& pData);
-	std::string BoolToString(bool& b);
-	float FindNextValue(std::string& str, int charAmount, char seperator);
 
 	sf::Clock shootClock;
 	sf::Time lastFired;

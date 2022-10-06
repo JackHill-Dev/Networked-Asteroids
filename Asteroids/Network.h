@@ -47,7 +47,6 @@ public:
 	ClientNetwork(std::string& ip);
 	void Recieve();
 	void Send(char* buffer, const int& bufferSize);
-	void SendPlayerData(const float& x, const float& y, const float& r);
 	void SendConnectionRequest();
 	void Disconnect();
 	int& GetID() { return ID; }
