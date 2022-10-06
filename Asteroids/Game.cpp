@@ -227,12 +227,17 @@ void Game::UpdateGameData(float& dt,  char* buffer)
 		{
 			int readIndex = 1;
 
-			AsteroidDataPacket astData;
-			memcpy(&astData, &buffer[readIndex], sizeof(AsteroidDataPacket));
-			asteroids[astData.id]->isDestroyed = astData.Destroyed;
-			asteroids[astData.id]->spr.setPosition(astData.Position);
-			asteroids[astData.id]->spr.setRotation(astData.Rotation);
-			asteroids[astData.id]->velocity = astData.Velocity;
+			for (size_t i = 0; i < asteroids.size(); i++)
+			{
+				AsteroidDataPacket astData;
+				memcpy(&astData, &buffer[readIndex], sizeof(AsteroidDataPacket));
+				asteroids[astData.id]->isDestroyed = astData.Destroyed;
+				asteroids[astData.id]->spr.setPosition(astData.Position);
+				asteroids[astData.id]->spr.setRotation(astData.Rotation);
+				asteroids[astData.id]->velocity = astData.Velocity;
+
+				readIndex += sizeof(AsteroidDataPacket);
+			}
 		}
 		////for (size_t i = 0; i < asteroids.size(); i++)
 		////{
@@ -555,7 +560,20 @@ char* Game::CreateAsteroidPacket()
 
 	for (size_t i = 0; i < asteroids.size(); ++i)
 	{
-		Asteroid& ast = *asteroids[i];
+		AsteroidDataPacket astData =
+		{
+			.id = i,
+			.Destroyed = asteroids[i]->isDestroyed,
+			.Rotation = asteroids[i]->spr.getRotation(),
+			.Position = asteroids[i]->spr.getPosition(),
+			.Velocity = asteroids[i]->velocity
+		};
+
+		memcpy(&buffer[bytesWritten], &astData, sizeof(AsteroidDataPacket));
+		bytesWritten += sizeof(AsteroidDataPacket);
+
+
+		/*Asteroid& ast = *asteroids[i];
 		int object_index = i;
 		float rot = ast.spr.getRotation();
 
@@ -566,7 +584,7 @@ char* Game::CreateAsteroidPacket()
 		bytesWritten += sizeof(bool);
 
 		memcpy(&buffer[bytesWritten], &ast.velocity, sizeof(&ast.velocity));
-		bytesWritten += sizeof(ast.velocity);
+		bytesWritten += sizeof(ast.velocity);*/
 
 		//memcpy(&buffer[bytesWritten], &ast->spr.getPosition().y, sizeof(&ast->spr.getPosition().y));
 		//bytesWritten += sizeof(ast->spr.getPosition().y);
@@ -588,6 +606,7 @@ char* Game::CreateAsteroidPacket(int objectIndex)
 
 	Asteroid& ast = *asteroids[objectIndex];
 	float rot = ast.spr.getRotation();
+
 
 	AsteroidDataPacket astData =
 	{
